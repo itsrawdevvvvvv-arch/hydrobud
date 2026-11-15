@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.WaterDrop
@@ -38,6 +39,7 @@ import com.hydrobud.app.ui.screens.ProfileScreen
 import com.hydrobud.app.ui.screens.RemindersScreen
 import com.hydrobud.app.ui.screens.SplashLoadingScreen
 import com.hydrobud.app.ui.screens.StatsScreen
+import com.hydrobud.app.ui.screens.WalkScreen
 import com.hydrobud.app.ui.theme.HydroBudTheme
 
 class MainActivity : ComponentActivity() {
@@ -62,6 +64,7 @@ fun HydroBudRoot(viewModel: MainViewModel = viewModel()) {
     val tabs = remember {
         listOf(
             NavTabItem("home", "Drink", Icons.Rounded.WaterDrop),
+            NavTabItem("walk", "Walk", Icons.Rounded.DirectionsWalk),
             NavTabItem("stats", "Stats", Icons.Rounded.BarChart),
             NavTabItem("reminders", "Alerts", Icons.Rounded.Notifications),
             NavTabItem("profile", "Profile", Icons.Rounded.Person)
@@ -109,13 +112,20 @@ fun HydroBudRoot(viewModel: MainViewModel = viewModel()) {
                                     onAddWater = { ml, label -> viewModel.addWater(ml, label) },
                                     onUndo = { viewModel.undoLastLog() },
                                     onDeleteLog = { id -> viewModel.removeLog(id) },
+                                    onNavigateToWalk = { selectedTab = 1 },
                                     contentPadding = innerPadding
                                 )
-                                1 -> StatsScreen(
+                                1 -> WalkScreen(
+                                    state = state,
+                                    onUpdateProfile = { viewModel.updateProfile(it) },
+                                    onStartService = { viewModel.startWalkService() },
+                                    contentPadding = innerPadding
+                                )
+                                2 -> StatsScreen(
                                     state = state,
                                     contentPadding = innerPadding
                                 )
-                                2 -> RemindersScreen(
+                                3 -> RemindersScreen(
                                     profile = state.profile,
                                     onUpdateProfile = { viewModel.updateProfile(it) },
                                     onSendTestNotification = { viewModel.sendTestNotification() },

@@ -15,54 +15,70 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * Color palette directly inspired by the "Let's stream TV shows now" reference:
+ * Periwinkle Purple, Electric Yellow, Blush Peach, Warm Amber, Brick Red, and Crisp Ink Black.
+ */
 object HydroColors {
-    val AquaPrimary = Color(0xFF00B4D8)
-    val OceanDeep = Color(0xFF0077B6)
-    val MintSplash = Color(0xFF48CAE4)
-    val SkySoft = Color(0xFFCAF0F8)
-    val IceBgLight = Color(0xFFF0F9FF)
-    val CardLight = Color(0xFFFFFFFF)
-    val CoralAccent = Color(0xFFFF758F)
-    val GoldSpark = Color(0xFFFFD166)
-    val MintGreen = Color(0xFF06D6A0)
-    val InkDark = Color(0xFF0B2545)
-    val InkMuted = Color(0xFF527999)
+    val PeriwinklePurple = Color(0xFF7C76B8)
+    val PeriwinkleDeep = Color(0xFF5D579B)
+    val ElectricYellow = Color(0xFFF5EB3B)
+    val BlushPeach = Color(0xFFF9C8BE)
+    val WarmAmber = Color(0xFFF2BF5E)
+    val BrickRed = Color(0xFFC23F38)
+    val InkBlack = Color(0xFF111111)
+    val CreamWhite = Color(0xFFFFFDF9)
+    val SoftLavenderBg = Color(0xFFF4F2FA)
+    val MintPop = Color(0xFF6EE7B7)
 
-    val DeepBgDark = Color(0xFF071526)
-    val CardDark = Color(0xFF0F253E)
-    val SurfaceDark = Color(0xFF163252)
+    // Dark mode variants preserving the playful pop contrast
+    val DarkPeriwinkleBg = Color(0xFF1A182E)
+    val DarkCard = Color(0xFF262342)
+    val DarkSurfaceVar = Color(0xFF343059)
+
+    // Semantic aliases used across components
+    val AquaPrimary = PeriwinklePurple
+    val OceanDeep = PeriwinkleDeep
+    val MintSplash = ElectricYellow
+    val SkySoft = BlushPeach
+    val CoralAccent = BrickRed
+    val GoldSpark = ElectricYellow
+    val MintGreen = MintPop
+    val InkDark = InkBlack
+    val InkMuted = Color(0xFF5A5678)
 }
 
 private val LightColorScheme = lightColorScheme(
-    primary = HydroColors.AquaPrimary,
+    primary = HydroColors.PeriwinklePurple,
     onPrimary = Color.White,
-    primaryContainer = HydroColors.SkySoft,
-    onPrimaryContainer = HydroColors.InkDark,
-    secondary = HydroColors.OceanDeep,
-    onSecondary = Color.White,
-    tertiary = HydroColors.CoralAccent,
-    background = HydroColors.IceBgLight,
-    onBackground = HydroColors.InkDark,
-    surface = HydroColors.CardLight,
-    onSurface = HydroColors.InkDark,
-    surfaceVariant = Color(0xFFE3F4FC),
+    primaryContainer = HydroColors.BlushPeach,
+    onPrimaryContainer = HydroColors.InkBlack,
+    secondary = HydroColors.ElectricYellow,
+    onSecondary = HydroColors.InkBlack,
+    tertiary = HydroColors.WarmAmber,
+    onTertiary = HydroColors.InkBlack,
+    background = HydroColors.PeriwinklePurple,
+    onBackground = HydroColors.InkBlack,
+    surface = HydroColors.CreamWhite,
+    onSurface = HydroColors.InkBlack,
+    surfaceVariant = HydroColors.SoftLavenderBg,
     onSurfaceVariant = HydroColors.InkMuted
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = HydroColors.MintSplash,
-    onPrimary = HydroColors.InkDark,
-    primaryContainer = HydroColors.SurfaceDark,
-    onPrimaryContainer = HydroColors.SkySoft,
-    secondary = HydroColors.AquaPrimary,
-    onSecondary = HydroColors.InkDark,
-    tertiary = HydroColors.CoralAccent,
-    background = HydroColors.DeepBgDark,
-    onBackground = Color(0xFFEAF6FF),
-    surface = HydroColors.CardDark,
-    onSurface = Color(0xFFEAF6FF),
-    surfaceVariant = HydroColors.SurfaceDark,
-    onSurfaceVariant = Color(0xFF9EC5E6)
+    primary = HydroColors.ElectricYellow,
+    onPrimary = HydroColors.InkBlack,
+    primaryContainer = HydroColors.DarkSurfaceVar,
+    onPrimaryContainer = HydroColors.BlushPeach,
+    secondary = HydroColors.PeriwinklePurple,
+    onSecondary = Color.White,
+    tertiary = HydroColors.WarmAmber,
+    background = HydroColors.DarkPeriwinkleBg,
+    onBackground = HydroColors.CreamWhite,
+    surface = HydroColors.DarkCard,
+    onSurface = HydroColors.CreamWhite,
+    surfaceVariant = HydroColors.DarkSurfaceVar,
+    onSurfaceVariant = Color(0xFFC7C3E6)
 )
 
 val PillShapes = Shapes(
@@ -76,38 +92,39 @@ val PillShapes = Shapes(
 val HydroTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.ExtraBold,
-        fontSize = 40.sp,
-        letterSpacing = (-0.5).sp
+        fontWeight = FontWeight.Black,
+        fontSize = 42.sp,
+        letterSpacing = (-1.0).sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 24.sp
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 26.sp,
+        letterSpacing = (-0.5).sp
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 20.sp
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 16.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Medium,
         fontSize = 15.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Medium,
         fontSize = 13.sp
     ),
     labelLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 14.sp
     )
 )

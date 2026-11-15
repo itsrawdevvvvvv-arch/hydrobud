@@ -5,7 +5,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -34,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,8 +51,8 @@ import com.hydrobud.app.ui.theme.HydroColors
 fun BouncyPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = HydroColors.AquaPrimary,
-    contentColor: Color = Color.White,
+    containerColor: Color = HydroColors.BlushPeach,
+    contentColor: Color = HydroColors.InkBlack,
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
@@ -60,7 +61,7 @@ fun BouncyPillButton(
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1f,
+        targetValue = if (isPressed) 0.93f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
@@ -86,10 +87,11 @@ fun BouncyPillButton(
         shape = CircleShape,
         color = if (enabled) containerColor else containerColor.copy(alpha = 0.45f),
         contentColor = contentColor,
-        shadowElevation = if (isPressed) 2.dp else 6.dp
+        border = BorderStroke(2.dp, HydroColors.InkBlack),
+        shadowElevation = if (isPressed) 1.dp else 4.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
             content = content
@@ -101,7 +103,8 @@ fun BouncyPillButton(
 fun PillProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
-    height: Dp = 14.dp
+    height: Dp = 16.dp,
+    fillColor: Color = HydroColors.ElectricYellow
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
@@ -118,17 +121,14 @@ fun PillProgressBar(
             .height(height)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(2.dp, HydroColors.InkBlack, CircleShape)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(animatedProgress.coerceAtLeast(0.03f))
+                .fillMaxWidth(animatedProgress.coerceAtLeast(0.04f))
                 .clip(CircleShape)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(HydroColors.MintSplash, HydroColors.AquaPrimary, HydroColors.OceanDeep)
-                    )
-                )
+                .background(fillColor)
         )
     }
 }
@@ -151,17 +151,17 @@ fun FloatingPillNavBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-            .height(66.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .height(64.dp),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        shadowElevation = 12.dp,
-        tonalElevation = 4.dp
+        color = HydroColors.CreamWhite,
+        border = BorderStroke(2.dp, HydroColors.InkBlack),
+        shadowElevation = 10.dp
     ) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(6.dp)
+                .padding(5.dp)
         ) {
             val tabWidth = maxWidth / tabs.size
             val indicatorOffset by animateDpAsState(
@@ -173,25 +173,22 @@ fun FloatingPillNavBar(
                 label = "navPillOffset"
             )
 
-            // Sliding active pill background
+            // Sliding active pill background in Electric Yellow with crisp InkBlack border
             Box(
                 modifier = Modifier
                     .offset(x = indicatorOffset)
                     .width(tabWidth)
                     .fillMaxHeight()
                     .clip(CircleShape)
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(HydroColors.AquaPrimary, HydroColors.OceanDeep)
-                        )
-                    )
+                    .background(HydroColors.ElectricYellow)
+                    .border(2.dp, HydroColors.InkBlack, CircleShape)
             )
 
             Row(modifier = Modifier.fillMaxSize()) {
                 tabs.forEachIndexed { index, tab ->
                     val isSelected = index == selectedIndex
                     val contentColor by animateColorAsState(
-                        targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        targetValue = if (isSelected) HydroColors.InkBlack else HydroColors.InkMuted,
                         label = "navTint"
                     )
                     Box(
@@ -216,15 +213,15 @@ fun FloatingPillNavBar(
                                 imageVector = tab.icon,
                                 contentDescription = tab.label,
                                 tint = contentColor,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(19.dp)
                             )
                             if (isSelected) {
-                                Spacer(modifier = Modifier.width(5.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = tab.label,
                                     color = contentColor,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black,
                                     maxLines = 1
                                 )
                             }

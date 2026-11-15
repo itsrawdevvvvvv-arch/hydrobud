@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.LocalDrink
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Undo
@@ -71,6 +73,7 @@ fun HomeScreen(
     onAddWater: (Int, String) -> Unit,
     onUndo: () -> Unit,
     onDeleteLog: (String) -> Unit,
+    onNavigateToWalk: () -> Unit,
     contentPadding: PaddingValues
 ) {
     var showCustomDialog by remember { mutableStateOf(false) }
@@ -89,20 +92,20 @@ fun HomeScreen(
         val name = state.profile.name
         when (state.mood) {
             CharacterMood.THIRSTY -> listOf(
-                "Hey $name, I'm feeling a bit dry!",
-                "Tap a pill below for a refreshing sip!"
+                "Hey $name, I need a sip!",
+                "Tap a pill below to hydrate!"
             )[characterQuoteIndex % 2]
             CharacterMood.HAPPY -> listOf(
-                "Nice flow, $name! Keep it up!",
-                "Every sip powers up your day!"
+                "Awesome flow, $name!",
+                "Keep sipping & walking!"
             )[characterQuoteIndex % 2]
             CharacterMood.ENERGIZED -> listOf(
-                "Woohoo! Almost at your daily limit!",
+                "So close to your daily goal!",
                 "You're glowing today, $name!"
             )[characterQuoteIndex % 2]
             CharacterMood.CELEBRATING -> listOf(
-                "100% Goal Crushed! Hydration Hero!",
-                "Party mode! You did amazing, $name!"
+                "100% Goal Crushed! Hero!",
+                "Party mode! Amazing job, $name!"
             )[characterQuoteIndex % 2]
         }
     }
@@ -117,7 +120,7 @@ fun HomeScreen(
             start = 16.dp,
             end = 16.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Top Header Pills
         item {
@@ -128,24 +131,26 @@ fun HomeScreen(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
+                    color = HydroColors.CreamWhite,
+                    border = BorderStroke(2.dp, HydroColors.InkBlack),
                     shadowElevation = 3.dp
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.WaterDrop,
                             contentDescription = null,
-                            tint = HydroColors.AquaPrimary,
+                            tint = HydroColors.PeriwinklePurple,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Hi, ${state.profile.name}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
+                            fontWeight = FontWeight.Black,
+                            fontSize = 14.sp,
+                            color = HydroColors.InkBlack
                         )
                     }
                 }
@@ -153,23 +158,24 @@ fun HomeScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Surface(
                         shape = CircleShape,
-                        color = HydroColors.CoralAccent.copy(alpha = 0.16f)
+                        color = HydroColors.BlushPeach,
+                        border = BorderStroke(2.dp, HydroColors.InkBlack)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.LocalFireDepartment,
                                 contentDescription = "Streak",
-                                tint = HydroColors.CoralAccent,
+                                tint = HydroColors.BrickRed,
                                 modifier = Modifier.size(16.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = "${state.streakDays}d",
-                                fontWeight = FontWeight.ExtraBold,
-                                color = HydroColors.CoralAccent,
+                                fontWeight = FontWeight.Black,
+                                color = HydroColors.InkBlack,
                                 fontSize = 13.sp
                             )
                         }
@@ -177,14 +183,15 @@ fun HomeScreen(
 
                     Surface(
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
+                        color = HydroColors.ElectricYellow,
+                        border = BorderStroke(2.dp, HydroColors.InkBlack)
                     ) {
                         Text(
                             text = "${state.percentInt}%",
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Black,
+                            color = HydroColors.InkBlack,
                             fontSize = 13.sp,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                         )
                     }
                 }
@@ -196,9 +203,10 @@ fun HomeScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(310.dp),
+                    .height(295.dp),
                 shape = RoundedCornerShape(42.dp),
-                color = MaterialTheme.colorScheme.surface,
+                color = HydroColors.CreamWhite,
+                border = BorderStroke(2.5.dp, HydroColors.InkBlack),
                 shadowElevation = 8.dp
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -210,14 +218,14 @@ fun HomeScreen(
                         onCharacterTap = { characterQuoteIndex++ }
                     )
 
-                    // Top floating speech bubble pill
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = 14.dp, start = 16.dp, end = 16.dp),
+                            .padding(top = 12.dp, start = 16.dp, end = 16.dp),
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
-                        shadowElevation = 4.dp
+                        color = HydroColors.ElectricYellow,
+                        border = BorderStroke(1.5.dp, HydroColors.InkBlack),
+                        shadowElevation = 3.dp
                     ) {
                         AnimatedContent(
                             targetState = moodMessage,
@@ -227,40 +235,89 @@ fun HomeScreen(
                             Text(
                                 text = msg,
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
+                                fontWeight = FontWeight.ExtraBold,
+                                color = HydroColors.InkBlack,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                             )
                         }
                     }
 
-                    // Bottom floating ml counter pill
                     Surface(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = 14.dp),
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-                        shadowElevation = 6.dp
+                        color = HydroColors.CreamWhite,
+                        border = BorderStroke(2.dp, HydroColors.InkBlack),
+                        shadowElevation = 5.dp
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 22.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = 22.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.Bottom
                         ) {
                             Text(
                                 text = "$animatedTotalMl",
                                 fontSize = 26.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = HydroColors.OceanDeep
+                                fontWeight = FontWeight.Black,
+                                color = HydroColors.InkBlack
                             )
                             Text(
                                 text = " / ${state.profile.dailyGoalMl} ml",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = HydroColors.InkMuted,
                                 modifier = Modifier.padding(bottom = 3.dp)
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        // Live Walk Summary Pill (tap to open Walk Screen)
+        item {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(CircleShape)
+                    .clickable { onNavigateToWalk() },
+                shape = CircleShape,
+                color = HydroColors.WarmAmber,
+                border = BorderStroke(2.dp, HydroColors.InkBlack),
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.DirectionsWalk,
+                            contentDescription = null,
+                            tint = HydroColors.InkBlack,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${state.todaySteps} / ${state.profile.dailyStepGoal} steps",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 14.sp,
+                            color = HydroColors.InkBlack
+                        )
+                    }
+                    Surface(
+                        shape = CircleShape,
+                        color = HydroColors.CreamWhite,
+                        border = BorderStroke(1.5.dp, HydroColors.InkBlack)
+                    ) {
+                        Text(
+                            text = "${state.stepPercentInt}%",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            color = HydroColors.InkBlack,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
                     }
                 }
             }
@@ -276,31 +333,34 @@ fun HomeScreen(
                     BouncyPillButton(
                         onClick = { onAddWater(state.profile.quickCup1Ml, "Small Cup") },
                         modifier = Modifier.weight(1f),
-                        containerColor = HydroColors.MintSplash
+                        containerColor = HydroColors.BlushPeach,
+                        contentColor = HydroColors.InkBlack
                     ) {
                         Icon(Icons.Rounded.LocalDrink, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("+${state.profile.quickCup1Ml}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("+${state.profile.quickCup1Ml}", fontWeight = FontWeight.Black, fontSize = 13.sp)
                     }
 
                     BouncyPillButton(
                         onClick = { onAddWater(state.profile.quickCup2Ml, "Glass") },
                         modifier = Modifier.weight(1f),
-                        containerColor = HydroColors.AquaPrimary
+                        containerColor = HydroColors.ElectricYellow,
+                        contentColor = HydroColors.InkBlack
                     ) {
                         Icon(Icons.Rounded.WaterDrop, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("+${state.profile.quickCup2Ml}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("+${state.profile.quickCup2Ml}", fontWeight = FontWeight.Black, fontSize = 13.sp)
                     }
 
                     BouncyPillButton(
                         onClick = { onAddWater(state.profile.quickCup3Ml, "Bottle") },
                         modifier = Modifier.weight(1f),
-                        containerColor = HydroColors.OceanDeep
+                        containerColor = HydroColors.WarmAmber,
+                        contentColor = HydroColors.InkBlack
                     ) {
                         Icon(Icons.Rounded.WaterDrop, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("+${state.profile.quickCup3Ml}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("+${state.profile.quickCup3Ml}", fontWeight = FontWeight.Black, fontSize = 13.sp)
                     }
                 }
 
@@ -311,24 +371,24 @@ fun HomeScreen(
                     BouncyPillButton(
                         onClick = { showCustomDialog = true },
                         modifier = Modifier.weight(1.4f),
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
+                        containerColor = HydroColors.CreamWhite,
+                        contentColor = HydroColors.InkBlack
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp), tint = HydroColors.AquaPrimary)
+                        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Custom Sip", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("Custom Sip", fontWeight = FontWeight.Black, fontSize = 14.sp)
                     }
 
                     BouncyPillButton(
                         onClick = onUndo,
                         modifier = Modifier.weight(1f),
                         enabled = state.todayLogs.isNotEmpty(),
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        containerColor = HydroColors.SoftLavenderBg,
+                        contentColor = HydroColors.InkBlack
                     ) {
                         Icon(Icons.Rounded.Undo, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Undo", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("Undo", fontWeight = FontWeight.Black, fontSize = 14.sp)
                     }
                 }
             }
@@ -346,17 +406,19 @@ fun HomeScreen(
                 Text(
                     text = "Today's Sips",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black,
+                    color = HydroColors.ElectricYellow
                 )
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceVariant
+                    color = HydroColors.CreamWhite,
+                    border = BorderStroke(1.5.dp, HydroColors.InkBlack)
                 ) {
                     Text(
                         text = if (state.remainingMl > 0) "${state.remainingMl} ml left" else "Goal Complete!",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (state.remainingMl > 0) MaterialTheme.colorScheme.onSurfaceVariant else HydroColors.MintGreen,
+                        fontWeight = FontWeight.Black,
+                        color = HydroColors.InkBlack,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
                     )
                 }
@@ -368,12 +430,13 @@ fun HomeScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                    color = HydroColors.CreamWhite,
+                    border = BorderStroke(2.dp, HydroColors.InkBlack)
                 ) {
                     Text(
                         text = "No sips logged yet today. Tap a pill button above to hydrate ${state.profile.characterType.displayName}!",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = HydroColors.InkBlack,
                         modifier = Modifier.padding(20.dp)
                     )
                 }
@@ -413,7 +476,8 @@ private fun WaterLogPillRow(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
+        color = HydroColors.CreamWhite,
+        border = BorderStroke(2.dp, HydroColors.InkBlack),
         shadowElevation = 2.dp
     ) {
         Row(
@@ -426,14 +490,15 @@ private fun WaterLogPillRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = CircleShape,
-                    color = HydroColors.SkySoft,
+                    color = HydroColors.BlushPeach,
+                    border = BorderStroke(1.5.dp, HydroColors.InkBlack),
                     modifier = Modifier.size(38.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Rounded.WaterDrop,
                             contentDescription = null,
-                            tint = HydroColors.OceanDeep,
+                            tint = HydroColors.InkBlack,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -442,14 +507,14 @@ private fun WaterLogPillRow(
                 Column {
                     Text(
                         text = "+${entry.amountMl} ml",
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = FontWeight.Black,
                         fontSize = 15.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = HydroColors.InkBlack
                     )
                     Text(
                         text = "${entry.label} • $timeText",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = HydroColors.InkMuted
                     )
                 }
             }
@@ -458,7 +523,7 @@ private fun WaterLogPillRow(
                 Icon(
                     imageVector = Icons.Rounded.DeleteOutline,
                     contentDescription = "Remove",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = HydroColors.BrickRed
                 )
             }
         }
@@ -476,20 +541,22 @@ private fun CustomWaterDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(32.dp),
+        containerColor = HydroColors.CreamWhite,
         title = {
-            Text("Custom Water Sip", fontWeight = FontWeight.Bold)
+            Text("Custom Water Sip", fontWeight = FontWeight.Black, color = HydroColors.InkBlack)
         },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Surface(
                     shape = CircleShape,
-                    color = HydroColors.SkySoft
+                    color = HydroColors.ElectricYellow,
+                    border = BorderStroke(2.dp, HydroColors.InkBlack)
                 ) {
                     Text(
                         text = "$amount ml",
                         fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = HydroColors.OceanDeep,
+                        fontWeight = FontWeight.Black,
+                        color = HydroColors.InkBlack,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
                     )
                 }
@@ -499,8 +566,8 @@ private fun CustomWaterDialog(
                     onValueChange = { sliderVal = it },
                     valueRange = 50f..1000f,
                     colors = SliderDefaults.colors(
-                        thumbColor = HydroColors.OceanDeep,
-                        activeTrackColor = HydroColors.AquaPrimary
+                        thumbColor = HydroColors.InkBlack,
+                        activeTrackColor = HydroColors.PeriwinklePurple
                     )
                 )
                 Row(
@@ -514,13 +581,14 @@ private fun CustomWaterDialog(
                                 .clip(CircleShape)
                                 .clickable { sliderVal = preset.toFloat() },
                             shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant
+                            color = HydroColors.SoftLavenderBg,
+                            border = BorderStroke(1.5.dp, HydroColors.InkBlack)
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             ) {
-                                Text("${preset}ml", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("${preset}ml", fontWeight = FontWeight.Black, fontSize = 12.sp, color = HydroColors.InkBlack)
                             }
                         }
                     }
@@ -528,17 +596,16 @@ private fun CustomWaterDialog(
             }
         },
         confirmButton = {
-            BouncyPillButton(onClick = { onConfirm(amount) }) {
-                Text("Add Sip", fontWeight = FontWeight.Bold)
+            BouncyPillButton(onClick = { onConfirm(amount) }, containerColor = HydroColors.ElectricYellow) {
+                Text("Add Sip", fontWeight = FontWeight.Black)
             }
         },
         dismissButton = {
             BouncyPillButton(
                 onClick = onDismiss,
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                containerColor = HydroColors.BlushPeach
             ) {
-                Text("Cancel", fontWeight = FontWeight.Bold)
+                Text("Cancel", fontWeight = FontWeight.Black)
             }
         }
     )

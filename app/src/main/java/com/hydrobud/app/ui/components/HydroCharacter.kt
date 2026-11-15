@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -47,8 +46,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Hardware-accelerated, low-end-device-friendly animated liquid tank + expressive character.
- * Uses a single Canvas with minimal allocations so it runs at 60fps even on Android 9 budget phones.
+ * Hardware-accelerated playful neo-brutalist animated liquid tank + expressive character.
+ * Styled with the "Let's stream TV shows now" palette & crisp ink outlines.
  */
 @Composable
 fun AnimatedLiquidTankWithCharacter(
@@ -62,7 +61,7 @@ fun AnimatedLiquidTankWithCharacter(
     val scope = rememberCoroutineScope()
 
     val animatedProgress by animateFloatAsState(
-        targetValue = progress.coerceIn(0.04f, 1.0f),
+        targetValue = progress.coerceIn(0.06f, 1.0f),
         animationSpec = spring(
             dampingRatio = 0.65f,
             stiffness = Spring.StiffnessLow
@@ -76,7 +75,7 @@ fun AnimatedLiquidTankWithCharacter(
         initialValue = 0f,
         targetValue = (2f * PI).toFloat(),
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2600, easing = LinearEasing),
+            animation = tween(durationMillis = 2400, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "wavePhase"
@@ -86,18 +85,18 @@ fun AnimatedLiquidTankWithCharacter(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3600, easing = LinearEasing),
+            animation = tween(durationMillis = 3400, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "bubbleCycle"
     )
 
     val floatOffset by infiniteTransition.animateFloat(
-        initialValue = -6f,
-        targetValue = 6f,
+        initialValue = -7f,
+        targetValue = 7f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = if (mood == CharacterMood.CELEBRATING) 900 else 1700,
+                durationMillis = if (mood == CharacterMood.CELEBRATING) 850 else 1600,
                 easing = FastOutSlowInEasing
             ),
             repeatMode = RepeatMode.Reverse
@@ -105,18 +104,16 @@ fun AnimatedLiquidTankWithCharacter(
         label = "floatOffset"
     )
 
-    // Periodic eye blink
     var isBlinking by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         while (true) {
-            delay(3200)
+            delay(3000)
             isBlinking = true
             delay(130)
             isBlinking = false
         }
     }
 
-    // Interactive squish & bounce on tap
     val tapScaleX = remember { Animatable(1f) }
     val tapScaleY = remember { Animatable(1f) }
     val tapRotation = remember { Animatable(0f) }
@@ -136,16 +133,16 @@ fun AnimatedLiquidTankWithCharacter(
                 scope.launch {
                     isWinking = true
                     launch {
-                        tapScaleX.animateTo(1.18f, tween(90))
+                        tapScaleX.animateTo(1.20f, tween(85))
                         tapScaleX.animateTo(1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium))
                     }
                     launch {
-                        tapScaleY.animateTo(0.84f, tween(90))
+                        tapScaleY.animateTo(0.82f, tween(85))
                         tapScaleY.animateTo(1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium))
                     }
                     launch {
-                        tapRotation.animateTo(-6f, tween(90))
-                        tapRotation.animateTo(6f, tween(110))
+                        tapRotation.animateTo(-7f, tween(85))
+                        tapRotation.animateTo(7f, tween(105))
                         tapRotation.animateTo(0f, spring(Spring.DampingRatioMediumBouncy))
                     }
                     delay(450)
@@ -158,9 +155,9 @@ fun AnimatedLiquidTankWithCharacter(
             val w = size.width
             val h = size.height
             val waterTop = h * (1f - animatedProgress)
-            val amplitude = (h * 0.032f).coerceAtLeast(6f)
+            val amplitude = (h * 0.035f).coerceAtLeast(6f)
 
-            // Back parallax wave
+            // Back parallax wave (Warm Amber)
             wavePath2.reset()
             wavePath2.moveTo(0f, h)
             wavePath2.lineTo(0f, waterTop)
@@ -176,10 +173,10 @@ fun AnimatedLiquidTankWithCharacter(
 
             drawPath(
                 path = wavePath2,
-                color = HydroColors.MintSplash.copy(alpha = 0.35f)
+                color = HydroColors.BlushPeach.copy(alpha = 0.72f)
             )
 
-            // Front main wave
+            // Front main wave (Periwinkle Purple)
             wavePath1.reset()
             wavePath1.moveTo(0f, h)
             wavePath1.lineTo(0f, waterTop)
@@ -194,48 +191,39 @@ fun AnimatedLiquidTankWithCharacter(
 
             drawPath(
                 path = wavePath1,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        HydroColors.AquaPrimary.copy(alpha = 0.52f),
-                        HydroColors.OceanDeep.copy(alpha = 0.68f)
-                    ),
-                    startY = waterTop,
-                    endY = h
-                )
+                color = HydroColors.PeriwinklePurple.copy(alpha = 0.85f)
             )
 
-            // Lightweight rising bubbles inside water
+            // Rising playful bubbles
             val bubbleSeeds = 7
             for (i in 0 until bubbleSeeds) {
                 val offset = ((bubbleCycle + i * 0.143f) % 1f)
                 val bx = w * (0.14f + (i * 0.125f) % 0.76f) + sin(offset * 6f + i) * 10f
                 val by = h - offset * (h - waterTop + 20f)
                 if (by > waterTop + 8f) {
-                    val radius = (5f + (i % 3) * 3.5f)
+                    val radius = (5.5f + (i % 3) * 3.5f)
                     drawCircle(
-                        color = Color.White.copy(alpha = (1f - offset) * 0.45f),
+                        color = HydroColors.ElectricYellow.copy(alpha = (1f - offset) * 0.75f),
                         radius = radius,
                         center = Offset(bx, by)
                     )
                 }
             }
 
-            // Celebration sparkles when goal reached
             if (mood == CharacterMood.CELEBRATING) {
                 for (s in 0 until 6) {
                     val angle = wavePhase + s * (PI.toFloat() / 3f)
-                    val sx = w * 0.5f + cos(angle) * (w * 0.33f)
+                    val sx = w * 0.5f + cos(angle) * (w * 0.34f)
                     val sy = h * 0.45f + sin(angle * 1.5f) * (h * 0.25f)
                     drawCircle(
-                        color = if (s % 2 == 0) HydroColors.GoldSpark else HydroColors.CoralAccent,
-                        radius = 5f + (s % 2) * 2f,
+                        color = if (s % 2 == 0) HydroColors.ElectricYellow else HydroColors.BrickRed,
+                        radius = 6f + (s % 2) * 2f,
                         center = Offset(sx, sy)
                     )
                 }
             }
         }
 
-        // Character Layer with hardware-accelerated graphicsLayer transform
         HydroCharacterAvatar(
             characterType = characterType,
             mood = mood,
@@ -289,6 +277,7 @@ private fun DrawScope.drawDroppy(
     isBlinking: Boolean,
     isWinking: Boolean
 ) {
+    val outlineStroke = (w * 0.028f).coerceAtLeast(4f)
     bodyPath.reset()
     bodyPath.moveTo(cx, h * 0.12f)
     bodyPath.cubicTo(
@@ -303,48 +292,40 @@ private fun DrawScope.drawDroppy(
     )
     bodyPath.close()
 
-    // Soft shadow
+    // Crisp neo-brutalist black offset shadow
     drawCircle(
-        color = HydroColors.OceanDeep.copy(alpha = 0.14f),
-        radius = w * 0.28f,
-        center = Offset(cx, h * 0.90f)
+        color = HydroColors.InkBlack.copy(alpha = 0.22f),
+        radius = w * 0.27f,
+        center = Offset(cx + w * 0.02f, h * 0.89f)
     )
 
-    drawPath(
-        path = bodyPath,
-        brush = Brush.verticalGradient(
-            colors = listOf(Color(0xFF56E0F5), HydroColors.AquaPrimary, HydroColors.OceanDeep)
-        )
-    )
+    drawPath(path = bodyPath, color = HydroColors.ElectricYellow)
+    drawPath(path = bodyPath, color = HydroColors.InkBlack, style = Stroke(width = outlineStroke))
 
-    // Inner glossy highlight
+    // Inner shine
     innerPath.reset()
     innerPath.moveTo(cx - w * 0.14f, h * 0.40f)
     innerPath.quadraticTo(cx - w * 0.22f, h * 0.54f, cx - w * 0.16f, h * 0.64f)
     drawPath(
         path = innerPath,
-        color = Color.White.copy(alpha = 0.55f),
-        style = Stroke(width = w * 0.045f, cap = StrokeCap.Round)
-    )
-    drawCircle(
-        color = Color.White.copy(alpha = 0.65f),
-        radius = w * 0.025f,
-        center = Offset(cx - w * 0.10f, h * 0.32f)
+        color = Color.White.copy(alpha = 0.75f),
+        style = Stroke(width = w * 0.04f, cap = StrokeCap.Round)
     )
 
     if (mood == CharacterMood.CELEBRATING) {
-        drawCuteCrown(cx, h * 0.09f, w * 0.16f)
+        drawCuteCrown(cx, h * 0.08f, w * 0.17f, outlineStroke)
     }
 
     drawKawaiiFace(
         cx = cx,
-        eyeY = h * 0.56f,
+        eyeY = h * 0.55f,
         eyeSpacing = w * 0.11f,
-        eyeRadius = w * 0.042f,
-        mouthY = h * 0.65f,
+        eyeRadius = w * 0.055f,
+        mouthY = h * 0.66f,
         mood = mood,
         isBlinking = isBlinking,
-        isWinking = isWinking
+        isWinking = isWinking,
+        outlineStroke = outlineStroke * 0.75f
     )
 }
 
@@ -358,59 +339,51 @@ private fun DrawScope.drawBubbels(
     isBlinking: Boolean,
     isWinking: Boolean
 ) {
-    // Cute little ear fins (axolotl/sea-spirit style)
-    val finColor = Color(0xFFFF8FA3)
-    drawOval(
-        color = finColor,
-        topLeft = Offset(cx - w * 0.42f, cy - h * 0.12f),
-        size = Size(w * 0.16f, h * 0.10f)
-    )
-    drawOval(
-        color = finColor,
-        topLeft = Offset(cx - w * 0.40f, cy - h * 0.01f),
-        size = Size(w * 0.14f, h * 0.09f)
-    )
-    drawOval(
-        color = finColor,
-        topLeft = Offset(cx + w * 0.26f, cy - h * 0.12f),
-        size = Size(w * 0.16f, h * 0.10f)
-    )
-    drawOval(
-        color = finColor,
-        topLeft = Offset(cx + w * 0.26f, cy - h * 0.01f),
-        size = Size(w * 0.14f, h * 0.09f)
-    )
+    val outlineStroke = (w * 0.028f).coerceAtLeast(4f)
+    val finColor = HydroColors.BrickRed
 
-    // Round squishy blob body
+    // Cute ear fins with black outlines
+    drawOval(color = finColor, topLeft = Offset(cx - w * 0.42f, cy - h * 0.12f), size = Size(w * 0.16f, h * 0.10f))
+    drawOval(color = HydroColors.InkBlack, topLeft = Offset(cx - w * 0.42f, cy - h * 0.12f), size = Size(w * 0.16f, h * 0.10f), style = Stroke(outlineStroke * 0.8f))
+    drawOval(color = finColor, topLeft = Offset(cx + w * 0.26f, cy - h * 0.12f), size = Size(w * 0.16f, h * 0.10f))
+    drawOval(color = HydroColors.InkBlack, topLeft = Offset(cx + w * 0.26f, cy - h * 0.12f), size = Size(w * 0.16f, h * 0.10f), style = Stroke(outlineStroke * 0.8f))
+
+    // Round squishy blob body in Blush Peach
     drawRoundRect(
-        brush = Brush.verticalGradient(
-            colors = listOf(Color(0xFF72EFDD), Color(0xFF48CAE4), Color(0xFF0096C7))
-        ),
+        color = HydroColors.BlushPeach,
         topLeft = Offset(cx - w * 0.32f, cy - h * 0.26f),
         size = Size(w * 0.64f, h * 0.56f),
         cornerRadius = CornerRadius(w * 0.30f, w * 0.30f)
     )
+    drawRoundRect(
+        color = HydroColors.InkBlack,
+        topLeft = Offset(cx - w * 0.32f, cy - h * 0.26f),
+        size = Size(w * 0.64f, h * 0.56f),
+        cornerRadius = CornerRadius(w * 0.30f, w * 0.30f),
+        style = Stroke(width = outlineStroke)
+    )
 
     // Belly patch
     drawOval(
-        color = Color.White.copy(alpha = 0.35f),
-        topLeft = Offset(cx - w * 0.19f, cy + h * 0.03f),
-        size = Size(w * 0.38f, h * 0.22f)
+        color = HydroColors.ElectricYellow.copy(alpha = 0.7f),
+        topLeft = Offset(cx - w * 0.18f, cy + h * 0.04f),
+        size = Size(w * 0.36f, h * 0.20f)
     )
 
     if (mood == CharacterMood.CELEBRATING) {
-        drawCuteCrown(cx, cy - h * 0.29f, w * 0.16f)
+        drawCuteCrown(cx, cy - h * 0.31f, w * 0.17f, outlineStroke)
     }
 
     drawKawaiiFace(
         cx = cx,
         eyeY = cy - h * 0.06f,
         eyeSpacing = w * 0.12f,
-        eyeRadius = w * 0.042f,
-        mouthY = cy + h * 0.04f,
+        eyeRadius = w * 0.055f,
+        mouthY = cy + h * 0.05f,
         mood = mood,
         isBlinking = isBlinking,
-        isWinking = isWinking
+        isWinking = isWinking,
+        outlineStroke = outlineStroke * 0.75f
     )
 }
 
@@ -423,51 +396,55 @@ private fun DrawScope.drawCloudy(
     isBlinking: Boolean,
     isWinking: Boolean
 ) {
+    val outlineStroke = (w * 0.028f).coerceAtLeast(4f)
+
     // Little dangling feet
     drawRoundRect(
-        color = HydroColors.OceanDeep,
+        color = HydroColors.InkBlack,
         topLeft = Offset(cx - w * 0.14f, cy + h * 0.19f),
-        size = Size(w * 0.08f, h * 0.10f),
-        cornerRadius = CornerRadius(w * 0.04f, w * 0.04f)
+        size = Size(w * 0.09f, h * 0.11f),
+        cornerRadius = CornerRadius(w * 0.045f, w * 0.045f)
     )
     drawRoundRect(
-        color = HydroColors.OceanDeep,
-        topLeft = Offset(cx + w * 0.06f, cy + h * 0.19f),
-        size = Size(w * 0.08f, h * 0.10f),
-        cornerRadius = CornerRadius(w * 0.04f, w * 0.04f)
+        color = HydroColors.InkBlack,
+        topLeft = Offset(cx + w * 0.05f, cy + h * 0.19f),
+        size = Size(w * 0.09f, h * 0.11f),
+        cornerRadius = CornerRadius(w * 0.045f, w * 0.045f)
     )
 
-    // Fluffy cloud puffs
-    val cloudBrush = Brush.verticalGradient(
-        colors = listOf(Color(0xFFFFFFFF), Color(0xFFD8F3FF))
-    )
-    drawCircle(brush = cloudBrush, radius = w * 0.19f, center = Offset(cx - w * 0.18f, cy + h * 0.02f))
-    drawCircle(brush = cloudBrush, radius = w * 0.19f, center = Offset(cx + w * 0.18f, cy + h * 0.02f))
-    drawCircle(brush = cloudBrush, radius = w * 0.24f, center = Offset(cx, cy - h * 0.08f))
+    // Fluffy cloud puffs in Warm Amber / Cream
+    drawCircle(color = HydroColors.InkBlack, radius = w * 0.19f + outlineStroke * 0.6f, center = Offset(cx - w * 0.18f, cy + h * 0.02f))
+    drawCircle(color = HydroColors.InkBlack, radius = w * 0.19f + outlineStroke * 0.6f, center = Offset(cx + w * 0.18f, cy + h * 0.02f))
+    drawCircle(color = HydroColors.InkBlack, radius = w * 0.24f + outlineStroke * 0.6f, center = Offset(cx, cy - h * 0.08f))
+
+    drawCircle(color = HydroColors.CreamWhite, radius = w * 0.19f, center = Offset(cx - w * 0.18f, cy + h * 0.02f))
+    drawCircle(color = HydroColors.CreamWhite, radius = w * 0.19f, center = Offset(cx + w * 0.18f, cy + h * 0.02f))
+    drawCircle(color = HydroColors.CreamWhite, radius = w * 0.24f, center = Offset(cx, cy - h * 0.08f))
     drawRoundRect(
-        brush = cloudBrush,
+        color = HydroColors.CreamWhite,
         topLeft = Offset(cx - w * 0.30f, cy - h * 0.04f),
         size = Size(w * 0.60f, h * 0.26f),
         cornerRadius = CornerRadius(w * 0.14f, w * 0.14f)
     )
 
     if (mood == CharacterMood.CELEBRATING) {
-        drawCuteCrown(cx, cy - h * 0.34f, w * 0.16f)
+        drawCuteCrown(cx, cy - h * 0.35f, w * 0.17f, outlineStroke)
     }
 
     drawKawaiiFace(
         cx = cx,
         eyeY = cy + h * 0.01f,
         eyeSpacing = w * 0.11f,
-        eyeRadius = w * 0.038f,
-        mouthY = cy + h * 0.10f,
+        eyeRadius = w * 0.05f,
+        mouthY = cy + h * 0.11f,
         mood = mood,
         isBlinking = isBlinking,
-        isWinking = isWinking
+        isWinking = isWinking,
+        outlineStroke = outlineStroke * 0.75f
     )
 }
 
-private fun DrawScope.drawCuteCrown(cx: Float, baseY: Float, width: Float) {
+private fun DrawScope.drawCuteCrown(cx: Float, baseY: Float, width: Float, stroke: Float) {
     val crownPath = Path().apply {
         moveTo(cx - width * 0.5f, baseY + width * 0.35f)
         lineTo(cx - width * 0.55f, baseY)
@@ -478,7 +455,8 @@ private fun DrawScope.drawCuteCrown(cx: Float, baseY: Float, width: Float) {
         lineTo(cx + width * 0.5f, baseY + width * 0.35f)
         close()
     }
-    drawPath(path = crownPath, color = HydroColors.GoldSpark)
+    drawPath(path = crownPath, color = HydroColors.WarmAmber)
+    drawPath(path = crownPath, color = HydroColors.InkBlack, style = Stroke(width = stroke * 0.7f))
 }
 
 private fun DrawScope.drawKawaiiFace(
@@ -489,92 +467,89 @@ private fun DrawScope.drawKawaiiFace(
     mouthY: Float,
     mood: CharacterMood,
     isBlinking: Boolean,
-    isWinking: Boolean
+    isWinking: Boolean,
+    outlineStroke: Float
 ) {
-    val ink = HydroColors.InkDark
+    val ink = HydroColors.InkBlack
 
-    // Left Eye
+    // Big oval expressive cartoon eyes (inspired by reference icons)
     if (isBlinking || isWinking) {
         drawLine(
             color = ink,
             start = Offset(cx - eyeSpacing - eyeRadius, eyeY),
             end = Offset(cx - eyeSpacing + eyeRadius, eyeY),
-            strokeWidth = eyeRadius * 0.7f,
+            strokeWidth = eyeRadius * 0.6f,
             cap = StrokeCap.Round
         )
     } else {
-        drawCircle(color = ink, radius = eyeRadius, center = Offset(cx - eyeSpacing, eyeY))
-        drawCircle(
+        drawOval(
             color = Color.White,
-            radius = eyeRadius * 0.38f,
-            center = Offset(cx - eyeSpacing - eyeRadius * 0.25f, eyeY - eyeRadius * 0.25f)
+            topLeft = Offset(cx - eyeSpacing - eyeRadius * 0.85f, eyeY - eyeRadius * 1.1f),
+            size = Size(eyeRadius * 1.7f, eyeRadius * 2.2f)
         )
+        drawOval(
+            color = ink,
+            topLeft = Offset(cx - eyeSpacing - eyeRadius * 0.85f, eyeY - eyeRadius * 1.1f),
+            size = Size(eyeRadius * 1.7f, eyeRadius * 2.2f),
+            style = Stroke(width = outlineStroke)
+        )
+        drawCircle(color = ink, radius = eyeRadius * 0.45f, center = Offset(cx - eyeSpacing + eyeRadius * 0.15f, eyeY))
     }
 
-    // Right Eye
     if (isBlinking) {
         drawLine(
             color = ink,
             start = Offset(cx + eyeSpacing - eyeRadius, eyeY),
             end = Offset(cx + eyeSpacing + eyeRadius, eyeY),
-            strokeWidth = eyeRadius * 0.7f,
+            strokeWidth = eyeRadius * 0.6f,
             cap = StrokeCap.Round
         )
     } else {
-        drawCircle(color = ink, radius = eyeRadius, center = Offset(cx + eyeSpacing, eyeY))
-        drawCircle(
+        drawOval(
             color = Color.White,
-            radius = eyeRadius * 0.38f,
-            center = Offset(cx + eyeSpacing - eyeRadius * 0.25f, eyeY - eyeRadius * 0.25f)
+            topLeft = Offset(cx + eyeSpacing - eyeRadius * 0.85f, eyeY - eyeRadius * 1.1f),
+            size = Size(eyeRadius * 1.7f, eyeRadius * 2.2f)
         )
+        drawOval(
+            color = ink,
+            topLeft = Offset(cx + eyeSpacing - eyeRadius * 0.85f, eyeY - eyeRadius * 1.1f),
+            size = Size(eyeRadius * 1.7f, eyeRadius * 2.2f),
+            style = Stroke(width = outlineStroke)
+        )
+        drawCircle(color = ink, radius = eyeRadius * 0.45f, center = Offset(cx + eyeSpacing + eyeRadius * 0.15f, eyeY))
     }
 
     // Rosy Cheeks
-    val cheekAlpha = if (mood == CharacterMood.THIRSTY) 0.35f else 0.75f
+    val cheekAlpha = if (mood == CharacterMood.THIRSTY) 0.4f else 0.85f
     drawOval(
-        color = HydroColors.CoralAccent.copy(alpha = cheekAlpha),
-        topLeft = Offset(cx - eyeSpacing - eyeRadius * 1.4f, eyeY + eyeRadius * 0.8f),
-        size = Size(eyeRadius * 1.8f, eyeRadius * 1.0f)
+        color = HydroColors.BrickRed.copy(alpha = cheekAlpha),
+        topLeft = Offset(cx - eyeSpacing - eyeRadius * 1.3f, eyeY + eyeRadius * 0.9f),
+        size = Size(eyeRadius * 1.6f, eyeRadius * 0.9f)
     )
     drawOval(
-        color = HydroColors.CoralAccent.copy(alpha = cheekAlpha),
-        topLeft = Offset(cx + eyeSpacing - eyeRadius * 0.4f, eyeY + eyeRadius * 0.8f),
-        size = Size(eyeRadius * 1.8f, eyeRadius * 1.0f)
+        color = HydroColors.BrickRed.copy(alpha = cheekAlpha),
+        topLeft = Offset(cx + eyeSpacing - eyeRadius * 0.3f, eyeY + eyeRadius * 0.9f),
+        size = Size(eyeRadius * 1.6f, eyeRadius * 0.9f)
     )
 
-    // Mouth based on Mood
     val mouthPath = Path()
     when (mood) {
         CharacterMood.THIRSTY -> {
-            // Cute wavy/pouty "need water" mouth
-            mouthPath.moveTo(cx - eyeRadius * 1.1f, mouthY + eyeRadius * 0.3f)
-            mouthPath.quadraticTo(cx, mouthY - eyeRadius * 0.4f, cx + eyeRadius * 1.1f, mouthY + eyeRadius * 0.3f)
-            drawPath(
-                path = mouthPath,
-                color = ink,
-                style = Stroke(width = eyeRadius * 0.55f, cap = StrokeCap.Round)
-            )
+            mouthPath.moveTo(cx - eyeRadius * 0.9f, mouthY + eyeRadius * 0.25f)
+            mouthPath.quadraticTo(cx, mouthY - eyeRadius * 0.35f, cx + eyeRadius * 0.9f, mouthY + eyeRadius * 0.25f)
+            drawPath(path = mouthPath, color = ink, style = Stroke(width = eyeRadius * 0.45f, cap = StrokeCap.Round))
         }
         CharacterMood.HAPPY, CharacterMood.ENERGIZED -> {
-            mouthPath.moveTo(cx - eyeRadius * 1.2f, mouthY - eyeRadius * 0.1f)
-            mouthPath.quadraticTo(cx, mouthY + eyeRadius * 1.1f, cx + eyeRadius * 1.2f, mouthY - eyeRadius * 0.1f)
-            drawPath(
-                path = mouthPath,
-                color = ink,
-                style = Stroke(width = eyeRadius * 0.6f, cap = StrokeCap.Round)
-            )
+            mouthPath.moveTo(cx - eyeRadius * 1.0f, mouthY - eyeRadius * 0.1f)
+            mouthPath.quadraticTo(cx, mouthY + eyeRadius * 0.9f, cx + eyeRadius * 1.0f, mouthY - eyeRadius * 0.1f)
+            drawPath(path = mouthPath, color = ink, style = Stroke(width = eyeRadius * 0.48f, cap = StrokeCap.Round))
         }
         CharacterMood.CELEBRATING -> {
-            // Big open joyful smile
-            mouthPath.moveTo(cx - eyeRadius * 1.4f, mouthY - eyeRadius * 0.2f)
-            mouthPath.quadraticTo(cx, mouthY + eyeRadius * 1.7f, cx + eyeRadius * 1.4f, mouthY - eyeRadius * 0.2f)
+            mouthPath.moveTo(cx - eyeRadius * 1.2f, mouthY - eyeRadius * 0.15f)
+            mouthPath.quadraticTo(cx, mouthY + eyeRadius * 1.4f, cx + eyeRadius * 1.2f, mouthY - eyeRadius * 0.15f)
             mouthPath.close()
-            drawPath(path = mouthPath, color = HydroColors.CoralAccent)
-            drawPath(
-                path = mouthPath,
-                color = ink,
-                style = Stroke(width = eyeRadius * 0.45f, cap = StrokeCap.Round)
-            )
+            drawPath(path = mouthPath, color = HydroColors.BrickRed)
+            drawPath(path = mouthPath, color = ink, style = Stroke(width = eyeRadius * 0.38f, cap = StrokeCap.Round))
         }
     }
 }

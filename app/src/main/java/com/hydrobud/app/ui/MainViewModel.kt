@@ -10,6 +10,7 @@ import com.hydrobud.app.data.HydrationUiState
 import com.hydrobud.app.data.UserProfile
 import com.hydrobud.app.notifications.HydrationNotificationHelper
 import com.hydrobud.app.notifications.HydrationReminderWorker
+import com.hydrobud.app.steps.StepCounterService
 import com.hydrobud.app.widget.HydroWidgetProvider
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 enabled = snapshot.profile.remindersEnabled,
                 intervalMinutes = snapshot.profile.reminderIntervalMinutes
             )
+            if (snapshot.profile.walkTrackingEnabled) {
+                StepCounterService.start(getApplication())
+            }
             HydroWidgetProvider.triggerRefresh(getApplication())
         }
     }
@@ -68,8 +72,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 enabled = updated.remindersEnabled,
                 intervalMinutes = updated.reminderIntervalMinutes
             )
+            if (updated.walkTrackingEnabled) {
+                StepCounterService.start(getApplication())
+            } else {
+                StepCounterService.stop(getApplication())
+            }
             HydroWidgetProvider.triggerRefresh(getApplication())
         }
+    }
+
+    fun startWalkService() {
+        StepCounterService.start(getApplication())
     }
 
     fun completeOnboarding(
@@ -99,7 +112,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             userName = state.profile.name,
             characterName = state.profile.characterType.displayName,
             todayTotalMl = state.todayTotalMl,
-            goalMl = state.profile.dailyGoalMl
+            goalMl = state.profile.dailyGoalMl,
+            todaySteps = state.todaySteps,
+            stepGoal = state.profile.dailyStepGoal
         )
     }
 }

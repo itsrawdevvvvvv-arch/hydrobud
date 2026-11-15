@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.hydrobud.app.data.HydrationRepository
+import com.hydrobud.app.steps.StepCounterService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -20,6 +21,9 @@ class BootCompletedReceiver : BroadcastReceiver() {
                         enabled = state.profile.remindersEnabled,
                         intervalMinutes = state.profile.reminderIntervalMinutes
                     )
+                    if (state.profile.walkTrackingEnabled) {
+                        StepCounterService.start(context)
+                    }
                 } finally {
                     pendingResult.finish()
                 }

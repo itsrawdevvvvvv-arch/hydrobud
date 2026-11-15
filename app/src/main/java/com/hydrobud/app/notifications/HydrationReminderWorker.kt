@@ -36,7 +36,9 @@ class HydrationReminderWorker(
                 userName = profile.name,
                 characterName = profile.characterType.displayName,
                 todayTotalMl = state.todayTotalMl,
-                goalMl = profile.dailyGoalMl
+                goalMl = profile.dailyGoalMl,
+                todaySteps = state.todaySteps,
+                stepGoal = profile.dailyStepGoal
             )
         }
         return Result.success()

@@ -114,7 +114,7 @@ class HydroWidgetProvider : AppWidgetProvider() {
 
             val progressPct = state.percentInt.coerceIn(0, 100)
             val statusText = when {
-                progressPct >= 100 -> "${state.profile.characterType.displayName}: Goal Reached!"
+                progressPct >= 100 -> "${state.profile.characterType.displayName}: Goal Crushed!"
                 progressPct >= 70 -> "${state.profile.characterType.displayName}: Almost there!"
                 progressPct >= 25 -> "${state.profile.characterType.displayName}: Keep sipping!"
                 else -> "${state.profile.characterType.displayName}: Needs water!"
@@ -125,6 +125,10 @@ class HydroWidgetProvider : AppWidgetProvider() {
                     setTextViewText(R.id.widget_intake_text, "${state.todayTotalMl} / ${state.profile.dailyGoalMl} ml")
                     setTextViewText(R.id.widget_percent_badge, "$progressPct%")
                     setTextViewText(R.id.widget_status_text, statusText)
+                    setTextViewText(
+                        R.id.widget_steps_text,
+                        "Walk: ${state.todaySteps} / ${state.profile.dailyStepGoal} steps"
+                    )
                     setProgressBar(R.id.widget_progress_bar, 100, progressPct, false)
                     setOnClickPendingIntent(R.id.widget_root, openAppPending)
                     setOnClickPendingIntent(R.id.widget_btn_250, add250Pending)

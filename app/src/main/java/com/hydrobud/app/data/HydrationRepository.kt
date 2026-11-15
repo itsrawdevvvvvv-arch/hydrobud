@@ -26,6 +26,8 @@ class HydrationRepository private constructor(private val context: Context) {
         val WEIGHT_KG = intPreferencesKey("weight_kg")
         val ACTIVITY_LEVEL = stringPreferencesKey("activity_level")
         val DAILY_GOAL_ML = intPreferencesKey("daily_goal_ml")
+        val DAILY_STEP_GOAL = intPreferencesKey("daily_step_goal")
+        val WALK_TRACKING_ENABLED = booleanPreferencesKey("walk_tracking_enabled")
         val WAKE_HOUR = intPreferencesKey("wake_hour")
         val SLEEP_HOUR = intPreferencesKey("sleep_hour")
         val CHARACTER_TYPE = stringPreferencesKey("character_type")
@@ -39,7 +41,10 @@ class HydrationRepository private constructor(private val context: Context) {
         val LAST_ACTIVE_DATE = stringPreferencesKey("last_active_date")
         val TODAY_LOGS_JSON = stringPreferencesKey("today_logs_json")
         val HISTORY_JSON = stringPreferencesKey("history_json")
-        val STREAK_DAYS = intPreferencesKey("streak_days")
+
+        val TODAY_STEPS = intPreferencesKey("today_steps")
+        val SENSOR_BASELINE = intPreferencesKey("sensor_baseline")
+        val LAST_SENSOR_VALUE = intPreferencesKey("last_sensor_value")
     }
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -55,6 +60,8 @@ class HydrationRepository private constructor(private val context: Context) {
             weightKg = prefs[Keys.WEIGHT_KG] ?: 65,
             activityLevel = ActivityLevel.fromId(prefs[Keys.ACTIVITY_LEVEL]),
             dailyGoalMl = prefs[Keys.DAILY_GOAL_ML] ?: 2500,
+            dailyStepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000,
+            walkTrackingEnabled = prefs[Keys.WALK_TRACKING_ENABLED] ?: true,
             wakeHour = prefs[Keys.WAKE_HOUR] ?: 7,
             sleepHour = prefs[Keys.SLEEP_HOUR] ?: 23,
             characterType = HydroCharacterType.fromId(prefs[Keys.CHARACTER_TYPE]),
@@ -72,13 +79,20 @@ class HydrationRepository private constructor(private val context: Context) {
             emptyList()
         }
 
+        val todaySteps = if (storedDate == today) (prefs[Keys.TODAY_STEPS] ?: 0) else 0
         val todayTotal = todayLogs.sumOf { it.amountMl }
         val historyMap = parseHistory(prefs[Keys.HISTORY_JSON]).toMutableMap()
-        historyMap[today] = DailyHistoryEntry(today, todayTotal, profile.dailyGoalMl)
+        historyMap[today] = DailyHistoryEntry(
+            dateKey = today,
+            totalMl = todayTotal,
+            goalMl = profile.dailyGoalMl,
+            steps = todaySteps,
+            stepGoal = profile.dailyStepGoal
+        )
 
         val last7Days = (6 downTo 0).map { offset ->
             val d = LocalDate.now().minusDays(offset.toLong()).format(dateFormatter)
-            historyMap[d] ?: DailyHistoryEntry(d, 0, profile.dailyGoalMl)
+            historyMap[d] ?: DailyHistoryEntry(d, 0, profile.dailyGoalMl, 0, profile.dailyStepGoal)
         }
 
         val streak = calculateStreak(historyMap, profile.dailyGoalMl)
@@ -86,6 +100,7 @@ class HydrationRepository private constructor(private val context: Context) {
         HydrationUiState(
             profile = profile,
             todayTotalMl = todayTotal,
+            todaySteps = todaySteps,
             todayLogs = todayLogs.sortedByDescending { it.timestampMillis },
             weeklyHistory = last7Days,
             streakDays = streak,
@@ -103,12 +118,88 @@ class HydrationRepository private constructor(private val context: Context) {
                 val oldLogs = parseLogs(prefs[Keys.TODAY_LOGS_JSON])
                 val oldTotal = oldLogs.sumOf { it.amountMl }
                 val oldGoal = prefs[Keys.DAILY_GOAL_ML] ?: 2500
+                val oldSteps = prefs[Keys.TODAY_STEPS] ?: 0
+                val oldStepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000
+
                 val historyMap = parseHistory(prefs[Keys.HISTORY_JSON]).toMutableMap()
-                historyMap[storedDate] = DailyHistoryEntry(storedDate, oldTotal, oldGoal)
+                historyMap[storedDate] = DailyHistoryEntry(
+                    dateKey = storedDate,
+                    totalMl = oldTotal,
+                    goalMl = oldGoal,
+                    steps = oldSteps,
+                    stepGoal = oldStepGoal
+                )
                 prefs[Keys.HISTORY_JSON] = serializeHistory(historyMap)
                 prefs[Keys.TODAY_LOGS_JSON] = "[]"
+                prefs[Keys.TODAY_STEPS] = 0
+                val lastSensor = prefs[Keys.LAST_SENSOR_VALUE] ?: -1
+                if (lastSensor >= 0) {
+                    prefs[Keys.SENSOR_BASELINE] = lastSensor
+                }
             }
             prefs[Keys.LAST_ACTIVE_DATE] = today
+        }
+    }
+
+    suspend fun updateHardwareSteps(totalStepsSinceBoot: Int) {
+        if (totalStepsSinceBoot < 0) return
+        ensureDateRolledOver()
+        val today = todayKey()
+        context.hydroDataStore.edit { prefs ->
+            val lastSensor = prefs[Keys.LAST_SENSOR_VALUE] ?: -1
+            val currentTodaySteps = prefs[Keys.TODAY_STEPS] ?: 0
+            var baseline = prefs[Keys.SENSOR_BASELINE] ?: -1
+
+            val newTodaySteps = when {
+                baseline < 0 -> {
+                    baseline = totalStepsSinceBoot - currentTodaySteps
+                    prefs[Keys.SENSOR_BASELINE] = baseline
+                    currentTodaySteps
+                }
+                totalStepsSinceBoot < lastSensor -> {
+                    // Device rebooted: hardware counter reset to 0
+                    baseline = totalStepsSinceBoot - currentTodaySteps
+                    prefs[Keys.SENSOR_BASELINE] = baseline
+                    currentTodaySteps + totalStepsSinceBoot
+                }
+                else -> {
+                    (totalStepsSinceBoot - baseline).coerceAtLeast(currentTodaySteps)
+                }
+            }
+
+            prefs[Keys.LAST_SENSOR_VALUE] = totalStepsSinceBoot
+            prefs[Keys.TODAY_STEPS] = newTodaySteps
+            prefs[Keys.LAST_ACTIVE_DATE] = today
+
+            val goal = prefs[Keys.DAILY_GOAL_ML] ?: 2500
+            val stepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000
+            val totalMl = parseLogs(prefs[Keys.TODAY_LOGS_JSON]).sumOf { it.amountMl }
+            val historyMap = parseHistory(prefs[Keys.HISTORY_JSON]).toMutableMap()
+            historyMap[today] = DailyHistoryEntry(today, totalMl, goal, newTodaySteps, stepGoal)
+            prefs[Keys.HISTORY_JSON] = serializeHistory(historyMap)
+        }
+    }
+
+    suspend fun incrementStepsBy(delta: Int) {
+        if (delta <= 0) return
+        ensureDateRolledOver()
+        val today = todayKey()
+        context.hydroDataStore.edit { prefs ->
+            val current = prefs[Keys.TODAY_STEPS] ?: 0
+            val updated = current + delta
+            prefs[Keys.TODAY_STEPS] = updated
+            val baseline = prefs[Keys.SENSOR_BASELINE] ?: -1
+            if (baseline >= 0) {
+                prefs[Keys.SENSOR_BASELINE] = (baseline - delta).coerceAtLeast(0)
+            }
+            prefs[Keys.LAST_ACTIVE_DATE] = today
+
+            val goal = prefs[Keys.DAILY_GOAL_ML] ?: 2500
+            val stepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000
+            val totalMl = parseLogs(prefs[Keys.TODAY_LOGS_JSON]).sumOf { it.amountMl }
+            val historyMap = parseHistory(prefs[Keys.HISTORY_JSON]).toMutableMap()
+            historyMap[today] = DailyHistoryEntry(today, totalMl, goal, updated, stepGoal)
+            prefs[Keys.HISTORY_JSON] = serializeHistory(historyMap)
         }
     }
 
@@ -130,9 +221,11 @@ class HydrationRepository private constructor(private val context: Context) {
             prefs[Keys.LAST_ACTIVE_DATE] = today
 
             val goal = prefs[Keys.DAILY_GOAL_ML] ?: 2500
+            val stepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000
+            val steps = prefs[Keys.TODAY_STEPS] ?: 0
             val total = currentLogs.sumOf { it.amountMl }
             val historyMap = parseHistory(prefs[Keys.HISTORY_JSON]).toMutableMap()
-            historyMap[today] = DailyHistoryEntry(today, total, goal)
+            historyMap[today] = DailyHistoryEntry(today, total, goal, steps, stepGoal)
             prefs[Keys.HISTORY_JSON] = serializeHistory(historyMap)
         }
     }
@@ -144,9 +237,11 @@ class HydrationRepository private constructor(private val context: Context) {
             val currentLogs = parseLogs(prefs[Keys.TODAY_LOGS_JSON]).filterNot { it.id == logId }
             prefs[Keys.TODAY_LOGS_JSON] = serializeLogs(currentLogs)
             val goal = prefs[Keys.DAILY_GOAL_ML] ?: 2500
+            val stepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000
+            val steps = prefs[Keys.TODAY_STEPS] ?: 0
             val total = currentLogs.sumOf { it.amountMl }
             val historyMap = parseHistory(prefs[Keys.HISTORY_JSON]).toMutableMap()
-            historyMap[today] = DailyHistoryEntry(today, total, goal)
+            historyMap[today] = DailyHistoryEntry(today, total, goal, steps, stepGoal)
             prefs[Keys.HISTORY_JSON] = serializeHistory(historyMap)
         }
     }
@@ -160,9 +255,11 @@ class HydrationRepository private constructor(private val context: Context) {
                 val updated = currentLogs.drop(1)
                 prefs[Keys.TODAY_LOGS_JSON] = serializeLogs(updated)
                 val goal = prefs[Keys.DAILY_GOAL_ML] ?: 2500
+                val stepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000
+                val steps = prefs[Keys.TODAY_STEPS] ?: 0
                 val total = updated.sumOf { it.amountMl }
                 val historyMap = parseHistory(prefs[Keys.HISTORY_JSON]).toMutableMap()
-                historyMap[today] = DailyHistoryEntry(today, total, goal)
+                historyMap[today] = DailyHistoryEntry(today, total, goal, steps, stepGoal)
                 prefs[Keys.HISTORY_JSON] = serializeHistory(historyMap)
             }
         }
@@ -174,6 +271,8 @@ class HydrationRepository private constructor(private val context: Context) {
             prefs[Keys.WEIGHT_KG] = profile.weightKg.coerceIn(30, 200)
             prefs[Keys.ACTIVITY_LEVEL] = profile.activityLevel.id
             prefs[Keys.DAILY_GOAL_ML] = profile.dailyGoalMl.coerceIn(500, 6000)
+            prefs[Keys.DAILY_STEP_GOAL] = profile.dailyStepGoal.coerceIn(1000, 30000)
+            prefs[Keys.WALK_TRACKING_ENABLED] = profile.walkTrackingEnabled
             prefs[Keys.WAKE_HOUR] = profile.wakeHour.coerceIn(0, 23)
             prefs[Keys.SLEEP_HOUR] = profile.sleepHour.coerceIn(0, 23)
             prefs[Keys.CHARACTER_TYPE] = profile.characterType.id
@@ -235,7 +334,9 @@ class HydrationRepository private constructor(private val context: Context) {
                     map[dateKey] = DailyHistoryEntry(
                         dateKey = dateKey,
                         totalMl = obj.optInt("totalMl", 0),
-                        goalMl = obj.optInt("goalMl", 2500)
+                        goalMl = obj.optInt("goalMl", 2500),
+                        steps = obj.optInt("steps", 0),
+                        stepGoal = obj.optInt("stepGoal", 8000)
                     )
                 }
             }
@@ -247,13 +348,14 @@ class HydrationRepository private constructor(private val context: Context) {
 
     private fun serializeHistory(map: Map<String, DailyHistoryEntry>): String {
         val arr = JSONArray()
-        // Keep last 30 days to stay lightweight on low-end devices
         map.values.sortedByDescending { it.dateKey }.take(30).forEach { entry ->
             arr.put(
                 JSONObject().apply {
                     put("dateKey", entry.dateKey)
                     put("totalMl", entry.totalMl)
                     put("goalMl", entry.goalMl)
+                    put("steps", entry.steps)
+                    put("stepGoal", entry.stepGoal)
                 }
             )
         }

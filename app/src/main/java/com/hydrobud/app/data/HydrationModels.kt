@@ -48,7 +48,9 @@ data class WaterLogEntry(
 data class DailyHistoryEntry(
     val dateKey: String, // yyyy-MM-dd
     val totalMl: Int,
-    val goalMl: Int
+    val goalMl: Int,
+    val steps: Int = 0,
+    val stepGoal: Int = 8000
 )
 
 data class UserProfile(
@@ -56,6 +58,8 @@ data class UserProfile(
     val weightKg: Int = 65,
     val activityLevel: ActivityLevel = ActivityLevel.MODERATE,
     val dailyGoalMl: Int = 2500,
+    val dailyStepGoal: Int = 8000,
+    val walkTrackingEnabled: Boolean = true,
     val wakeHour: Int = 7,
     val sleepHour: Int = 23,
     val characterType: HydroCharacterType = HydroCharacterType.DROPPY,
@@ -76,6 +80,7 @@ data class UserProfile(
 data class HydrationUiState(
     val profile: UserProfile = UserProfile(),
     val todayTotalMl: Int = 0,
+    val todaySteps: Int = 0,
     val todayLogs: List<WaterLogEntry> = emptyList(),
     val weeklyHistory: List<DailyHistoryEntry> = emptyList(),
     val streakDays: Int = 0,
@@ -94,6 +99,20 @@ data class HydrationUiState(
 
     val remainingMl: Int
         get() = (profile.dailyGoalMl - todayTotalMl).coerceAtLeast(0)
+
+    val stepProgress: Float
+        get() = if (profile.dailyStepGoal <= 0) 0f
+        else (todaySteps.toFloat() / profile.dailyStepGoal.toFloat()).coerceIn(0f, 1f)
+
+    val stepPercentInt: Int
+        get() = if (profile.dailyStepGoal <= 0) 0
+        else ((todaySteps.toFloat() / profile.dailyStepGoal.toFloat()) * 100f).toInt()
+
+    val estimatedKm: Float
+        get() = (todaySteps * 0.00076f)
+
+    val estimatedKcal: Int
+        get() = (todaySteps * 0.04f).toInt()
 
     val mood: CharacterMood
         get() = when {

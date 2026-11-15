@@ -5,6 +5,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -68,15 +67,7 @@ fun SplashLoadingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        HydroColors.SkySoft.copy(alpha = 0.55f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            ),
+            .background(HydroColors.PeriwinklePurple),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -86,14 +77,15 @@ fun SplashLoadingScreen(
         ) {
             Surface(
                 modifier = Modifier
-                    .size(160.dp)
+                    .size(164.dp)
                     .graphicsLayer {
                         scaleX = logoScale.value
                         scaleY = logoScale.value
                     },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 14.dp
+                color = HydroColors.CreamWhite,
+                border = BorderStroke(3.dp, HydroColors.InkBlack),
+                shadowElevation = 12.dp
             ) {
                 Box(
                     modifier = Modifier
@@ -114,34 +106,40 @@ fun SplashLoadingScreen(
 
             Surface(
                 shape = CircleShape,
-                color = HydroColors.AquaPrimary,
+                color = HydroColors.ElectricYellow,
+                border = BorderStroke(2.5.dp, HydroColors.InkBlack),
                 shadowElevation = 6.dp
             ) {
                 Text(
                     text = "HydroBud",
-                    color = Color.White,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp)
+                    color = HydroColors.InkBlack,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 30.dp, vertical = 10.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Filling up your daily hydration buddy...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Sip water. Keep walking. Stay glowing!",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(26.dp))
 
             Box(
                 modifier = Modifier
-                    .width(210.dp)
+                    .width(220.dp)
                     .clip(CircleShape)
             ) {
-                PillProgressBar(progress = loadProgress.value, height = 12.dp)
+                PillProgressBar(
+                    progress = loadProgress.value,
+                    height = 14.dp,
+                    fillColor = HydroColors.BlushPeach
+                )
             }
         }
     }
