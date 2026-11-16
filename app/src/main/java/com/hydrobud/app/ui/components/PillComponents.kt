@@ -5,9 +5,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -51,8 +49,8 @@ import com.hydrobud.app.ui.theme.HydroColors
 fun BouncyPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    containerColor: Color = HydroColors.BlushPeach,
-    contentColor: Color = HydroColors.InkBlack,
+    containerColor: Color = HydroColors.CoralOrange,
+    contentColor: Color = Color.White,
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
@@ -87,11 +85,10 @@ fun BouncyPillButton(
         shape = CircleShape,
         color = if (enabled) containerColor else containerColor.copy(alpha = 0.45f),
         contentColor = contentColor,
-        border = BorderStroke(2.dp, HydroColors.InkBlack),
         shadowElevation = if (isPressed) 1.dp else 4.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 13.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
             content = content
@@ -103,8 +100,8 @@ fun BouncyPillButton(
 fun PillProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
-    height: Dp = 16.dp,
-    fillColor: Color = HydroColors.ElectricYellow
+    height: Dp = 12.dp,
+    fillColor: Color = HydroColors.CoralOrange
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
@@ -121,12 +118,11 @@ fun PillProgressBar(
             .height(height)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(2.dp, HydroColors.InkBlack, CircleShape)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(animatedProgress.coerceAtLeast(0.04f))
+                .fillMaxWidth(animatedProgress.coerceAtLeast(0.03f))
                 .clip(CircleShape)
                 .background(fillColor)
         )
@@ -139,6 +135,9 @@ data class NavTabItem(
     val icon: ImageVector
 )
 
+/**
+ * Minimal 3-tab floating pill navigation bar matching the clean pill aesthetic of 262479.jpg.
+ */
 @Composable
 fun FloatingPillNavBar(
     tabs: List<NavTabItem>,
@@ -151,11 +150,10 @@ fun FloatingPillNavBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-            .height(64.dp),
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .height(62.dp),
         shape = CircleShape,
-        color = HydroColors.CreamWhite,
-        border = BorderStroke(2.dp, HydroColors.InkBlack),
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 10.dp
     ) {
         BoxWithConstraints(
@@ -173,22 +171,21 @@ fun FloatingPillNavBar(
                 label = "navPillOffset"
             )
 
-            // Sliding active pill background in Electric Yellow with crisp InkBlack border
+            // Sliding Coral-Orange active pill
             Box(
                 modifier = Modifier
                     .offset(x = indicatorOffset)
                     .width(tabWidth)
                     .fillMaxHeight()
                     .clip(CircleShape)
-                    .background(HydroColors.ElectricYellow)
-                    .border(2.dp, HydroColors.InkBlack, CircleShape)
+                    .background(HydroColors.CoralOrange)
             )
 
             Row(modifier = Modifier.fillMaxSize()) {
                 tabs.forEachIndexed { index, tab ->
                     val isSelected = index == selectedIndex
                     val contentColor by animateColorAsState(
-                        targetValue = if (isSelected) HydroColors.InkBlack else HydroColors.InkMuted,
+                        targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                         label = "navTint"
                     )
                     Box(
@@ -215,16 +212,14 @@ fun FloatingPillNavBar(
                                 tint = contentColor,
                                 modifier = Modifier.size(19.dp)
                             )
-                            if (isSelected) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = tab.label,
-                                    color = contentColor,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Black,
-                                    maxLines = 1
-                                )
-                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = tab.label,
+                                color = contentColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
                         }
                     }
                 }

@@ -5,8 +5,8 @@ enum class HydroCharacterType(
     val displayName: String,
     val tagline: String
 ) {
-    DROPPY("droppy", "Droppy", "Bouncy Aqua Droplet"),
-    BUBBELS("bubbels", "Bubbels", "Cheerful Sea Spirit"),
+    DROPPY("droppy", "Droppy", "Bouncy Cyan Dome"),
+    BUBBELS("bubbels", "Bubbels", "Cheerful Sea Blob"),
     CLOUDY("cloudy", "Cloudy", "Fluffy Rain Buddy");
 
     companion object {
@@ -46,7 +46,7 @@ data class WaterLogEntry(
 )
 
 data class DailyHistoryEntry(
-    val dateKey: String, // yyyy-MM-dd
+    val dateKey: String,
     val totalMl: Int,
     val goalMl: Int,
     val steps: Int = 0,
@@ -68,7 +68,7 @@ data class UserProfile(
     val quickCup1Ml: Int = 150,
     val quickCup2Ml: Int = 250,
     val quickCup3Ml: Int = 500,
-    val hasCompletedOnboarding: Boolean = false
+    val hasCompletedOnboarding: Boolean = true
 ) {
     fun recommendedGoalMl(): Int {
         val base = (weightKg.coerceIn(30, 180) * 35)

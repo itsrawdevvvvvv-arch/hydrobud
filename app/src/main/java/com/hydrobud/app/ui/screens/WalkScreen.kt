@@ -8,7 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -65,8 +65,9 @@ import java.util.Locale
 @Composable
 fun WalkScreen(
     state: HydrationUiState,
+    sensorStatus: String,
     onUpdateProfile: (UserProfile) -> Unit,
-    onStartService: () -> Unit,
+    onPermissionGranted: () -> Unit,
     contentPadding: PaddingValues
 ) {
     val context = LocalContext.current
@@ -87,8 +88,8 @@ fun WalkScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasActivityPermission = granted
-        if (granted && state.profile.walkTrackingEnabled) {
-            onStartService()
+        if (granted) {
+            onPermissionGranted()
         }
     }
 
@@ -115,36 +116,46 @@ fun WalkScreen(
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(
-                top = contentPadding.calculateTopPadding() + 12.dp,
+                top = contentPadding.calculateTopPadding() + 14.dp,
                 bottom = contentPadding.calculateBottomPadding() + 92.dp,
-                start = 16.dp,
-                end = 16.dp
+                start = 18.dp,
+                end = 18.dp
             ),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header Pill
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Text(
+            text = "DAILY STEPS\nCOUNTER",
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center,
+            lineHeight = 28.sp,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        // Live Sensor Status Pill
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface
         ) {
-            Text(
-                text = "Walk & Steps",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Black,
-                color = HydroColors.ElectricYellow
-            )
-            Surface(
-                shape = CircleShape,
-                color = HydroColors.WarmAmber,
-                border = BorderStroke(2.dp, HydroColors.InkBlack)
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (state.profile.walkTrackingEnabled) HydroColors.FreshGreen
+                            else HydroColors.InkMuted
+                        )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "${state.stepPercentInt}% Goal",
+                    text = if (state.profile.walkTrackingEnabled) sensorStatus else "Paused",
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Black,
-                    color = HydroColors.InkBlack,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -152,9 +163,8 @@ fun WalkScreen(
         if (!hasActivityPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(30.dp),
-                color = HydroColors.BlushPeach,
-                border = BorderStroke(2.dp, HydroColors.InkBlack)
+                shape = RoundedCornerShape(24.dp),
+                color = HydroColors.CoralSoft
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -162,9 +172,9 @@ fun WalkScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Allow Physical Activity so steps count even when the app is closed!",
+                        text = "Allow Physical Activity for accurate hardware step counting.",
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = HydroColors.InkBlack,
                         modifier = Modifier.weight(1f)
                     )
@@ -173,125 +183,100 @@ fun WalkScreen(
                         onClick = {
                             activityPermLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
                         },
-                        containerColor = HydroColors.ElectricYellow
+                        containerColor = HydroColors.CoralOrange
                     ) {
-                        Text("Allow", fontSize = 12.sp, fontWeight = FontWeight.Black)
+                        Text("Allow", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
-        // Chunky Step Counter Hero Card (inspired by 262335.jpg + Let's Stream palette)
+        // Minimal Step Counter Card
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(36.dp),
-            color = HydroColors.CreamWhite,
-            border = BorderStroke(2.5.dp, HydroColors.InkBlack),
-            shadowElevation = 6.dp
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier.padding(22.dp),
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = formattedSteps,
-                        fontSize = 46.sp,
-                        fontWeight = FontWeight.Black,
-                        color = HydroColors.InkBlack,
-                        letterSpacing = (-1.5).sp
-                    )
-                    Text(
-                        text = "steps",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = HydroColors.InkMuted,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
+                Text(
+                    text = formattedSteps,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    letterSpacing = (-1.5).sp
+                )
+                Text(
+                    text = "of ${NumberFormat.getNumberInstance(Locale.US).format(state.profile.dailyStepGoal)} steps (${state.stepPercentInt}%)",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Distance & Calorie Pill Chips
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Surface(
-                        shape = CircleShape,
-                        color = HydroColors.SoftLavenderBg,
-                        border = BorderStroke(1.5.dp, HydroColors.InkBlack)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Rounded.Route, contentDescription = null, modifier = Modifier.size(16.dp), tint = HydroColors.InkBlack)
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = String.format(Locale.US, "%.2f km", state.estimatedKm),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = HydroColors.InkBlack
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = CircleShape,
-                        color = HydroColors.BlushPeach,
-                        border = BorderStroke(1.5.dp, HydroColors.InkBlack)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, modifier = Modifier.size(16.dp), tint = HydroColors.BrickRed)
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = "~${state.estimatedKcal} kcal",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = HydroColors.InkBlack
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 PillProgressBar(
                     progress = state.stepProgress,
-                    height = 20.dp,
-                    fillColor = HydroColors.ElectricYellow
+                    height = 16.dp,
+                    fillColor = HydroColors.CoralOrange
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Milestone Markers
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    listOf("0", "5k", "8k", "10k", "15k").forEach { marker ->
-                        Text(
-                            text = marker,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = HydroColors.InkMuted
-                        )
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Rounded.Route, contentDescription = null, modifier = Modifier.size(16.dp), tint = HydroColors.CyanDeep)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = String.format(Locale.US, "%.2f km", state.estimatedKm),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, modifier = Modifier.size(16.dp), tint = HydroColors.CoralOrange)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "~${state.estimatedKcal} kcal",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Walk Goal Setter Card
+        // Daily Walk Goal Setter
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(32.dp),
-            color = HydroColors.CreamWhite,
-            border = BorderStroke(2.dp, HydroColors.InkBlack),
-            shadowElevation = 4.dp
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(
@@ -300,27 +285,19 @@ fun WalkScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Daily Walk Goal",
+                        text = "Daily Step Goal",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = HydroColors.InkBlack
+                        fontWeight = FontWeight.Bold
                     )
-                    Surface(
-                        shape = CircleShape,
-                        color = HydroColors.ElectricYellow,
-                        border = BorderStroke(1.5.dp, HydroColors.InkBlack)
-                    ) {
-                        Text(
-                            text = "${((stepGoalSlider.toInt() + 250) / 500) * 500} steps",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 13.sp,
-                            color = HydroColors.InkBlack,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                        )
-                    }
+                    Text(
+                        text = "${((stepGoalSlider.toInt() + 250) / 500) * 500}",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = HydroColors.CoralOrange
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Slider(
                     value = stepGoalSlider,
@@ -331,12 +308,10 @@ fun WalkScreen(
                     },
                     valueRange = 2000f..20000f,
                     colors = SliderDefaults.colors(
-                        thumbColor = HydroColors.InkBlack,
-                        activeTrackColor = HydroColors.PeriwinklePurple
+                        thumbColor = HydroColors.CoralOrange,
+                        activeTrackColor = HydroColors.CoralOrange
                     )
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -353,8 +328,7 @@ fun WalkScreen(
                                     onUpdateProfile(state.profile.copy(dailyStepGoal = preset))
                                 },
                             shape = CircleShape,
-                            color = if (active) HydroColors.WarmAmber else HydroColors.SoftLavenderBg,
-                            border = BorderStroke(1.5.dp, HydroColors.InkBlack)
+                            color = if (active) HydroColors.CoralOrange else MaterialTheme.colorScheme.surfaceVariant
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
@@ -363,8 +337,8 @@ fun WalkScreen(
                                 Text(
                                     text = "${preset / 1000}k",
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = HydroColors.InkBlack
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (active) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -373,16 +347,14 @@ fun WalkScreen(
             }
         }
 
-        // Always-On Background Step Tracker Toggle Card
+        // Always-On Background Step Counter Toggle
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(32.dp),
-            color = HydroColors.WarmAmber,
-            border = BorderStroke(2.dp, HydroColors.InkBlack),
-            shadowElevation = 4.dp
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Row(
-                modifier = Modifier.padding(18.dp),
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -390,29 +362,22 @@ fun WalkScreen(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = HydroColors.CreamWhite,
-                        border = BorderStroke(1.5.dp, HydroColors.InkBlack),
-                        modifier = Modifier.size(42.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.DirectionsWalk, contentDescription = null, tint = HydroColors.InkBlack)
-                        }
-                    }
+                    Icon(
+                        Icons.Rounded.DirectionsWalk,
+                        contentDescription = null,
+                        tint = HydroColors.CoralOrange
+                    )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
                             text = "Always-On Step Counter",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 15.sp,
-                            color = HydroColors.InkBlack
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
                         )
                         Text(
-                            text = "Counts steps 24/7 even when app is closed",
+                            text = "Counts steps even when app is closed",
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = HydroColors.InkBlack.copy(alpha = 0.8f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -422,8 +387,8 @@ fun WalkScreen(
                         onUpdateProfile(state.profile.copy(walkTrackingEnabled = enabled))
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = HydroColors.ElectricYellow,
-                        checkedTrackColor = HydroColors.InkBlack
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = HydroColors.CoralOrange
                     )
                 )
             }

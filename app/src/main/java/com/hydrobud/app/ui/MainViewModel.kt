@@ -3,8 +3,6 @@ package com.hydrobud.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.hydrobud.app.data.ActivityLevel
-import com.hydrobud.app.data.HydroCharacterType
 import com.hydrobud.app.data.HydrationRepository
 import com.hydrobud.app.data.HydrationUiState
 import com.hydrobud.app.data.UserProfile
@@ -26,6 +24,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HydrationUiState()
     )
+
+    val sensorStatus: StateFlow<String> = StepCounterService.sensorStatus
 
     init {
         viewModelScope.launch {
@@ -81,28 +81,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun startWalkService() {
-        StepCounterService.start(getApplication())
-    }
-
-    fun completeOnboarding(
-        name: String,
-        weightKg: Int,
-        activityLevel: ActivityLevel,
-        dailyGoalMl: Int,
-        characterType: HydroCharacterType
-    ) {
-        val current = uiState.value.profile
-        updateProfile(
-            current.copy(
-                name = name.ifBlank { "Buddy" },
-                weightKg = weightKg,
-                activityLevel = activityLevel,
-                dailyGoalMl = dailyGoalMl,
-                characterType = characterType,
-                hasCompletedOnboarding = true
-            )
-        )
+    fun reregisterStepSensor() {
+        if (uiState.value.profile.walkTrackingEnabled) {
+            StepCounterService.reregister(getApplication())
+        }
     }
 
     fun sendTestNotification() {
