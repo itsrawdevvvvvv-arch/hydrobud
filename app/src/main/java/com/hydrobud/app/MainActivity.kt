@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hydrobud.app.ui.MainViewModel
+import kotlinx.coroutines.delay
 import com.hydrobud.app.ui.components.FloatingPillNavBar
 import com.hydrobud.app.ui.components.NavTabItem
 import com.hydrobud.app.ui.screens.HomeScreen
@@ -64,6 +65,14 @@ fun HydroBudRoot(viewModel: MainViewModel = viewModel()) {
     val serviceError by viewModel.serviceError.collectAsStateWithLifecycle()
     var showSplash by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
+    var forceContent by remember { mutableStateOf(false) }
+
+    // Never let a slow or failing data load keep the user on the splash forever.
+    LaunchedEffect(Unit) {
+        delay(2600)
+        forceContent = true
+        CrashGuard.markHealthy(context)
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -112,8 +121,10 @@ fun HydroBudRoot(viewModel: MainViewModel = viewModel()) {
         )
     }
 
+    val isSplash = !forceContent && (showSplash || !state.isLoaded)
+
     AnimatedContent(
-        targetState = showSplash || !state.isLoaded,
+        targetState = isSplash,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         label = "rootTransition"
     ) { isSplash ->

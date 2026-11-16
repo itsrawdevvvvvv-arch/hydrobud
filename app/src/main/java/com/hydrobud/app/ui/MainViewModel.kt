@@ -1,6 +1,7 @@
 package com.hydrobud.app.ui
 
 import android.app.Application
+import com.hydrobud.app.CrashGuard
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hydrobud.app.data.HydrationRepository
@@ -30,20 +31,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            repo.ensureDateRolledOver()
-            val snapshot = repo.getSnapshot()
-            HydrationReminderWorker.schedule(
-                context = getApplication(),
-                enabled = snapshot.profile.remindersEnabled,
-                intervalMinutes = snapshot.profile.reminderIntervalMinutes
-            )
-            // Only start the health foreground service if BOTH enabled AND permission is already granted (R1)
-            if (snapshot.profile.walkTrackingEnabled &&
-                StepCounterService.hasActivityPermission(getApplication())
-            ) {
-                StepCounterService.start(getApplication())
+            // If the previous cold start died before the first frame, skip every
+            // background side effect this time so the UI always comes up.
+            if (CrashGuard.isSafeMode(getApplication())) {
+                android.util.Log.w("HydroBud", "SAFE MODE: skipping background startup work")
+                return@launch
             }
-            HydroWidgetProvider.triggerRefresh(getApplication())
+            val snapshot = runCatching {
+                repo.ensureDateRolledOver()
+                repo.getSnapshot()
+            }.onFailure {
+                android.util.Log.e("HydroBud", "snapshot failed at startup", it)
+            }.getOrNull() ?: return@launch
+
+            runCatching {
+                HydrationReminderWorker.schedule(
+                    context = getApplication(),
+                    enabled = snapshot.profile.remindersEnabled,
+                    intervalMinutes = snapshot.profile.reminderIntervalMinutes
+                )
+            }.onFailure { android.util.Log.e("HydroBud", "reminder scheduling failed", it) }
+
+            runCatching {
+                if (snapshot.profile.walkTrackingEnabled &&
+                    StepCounterService.hasActivityPermission(getApplication())
+                ) {
+                    StepCounterService.start(getApplication())
+                }
+            }.onFailure { android.util.Log.e("HydroBud", "step service start failed", it) }
+
+            runCatching {
+                HydroWidgetProvider.triggerRefresh(getApplication())
+            }.onFailure { android.util.Log.e("HydroBud", "widget refresh failed", it) }
         }
     }
 

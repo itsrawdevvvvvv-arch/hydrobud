@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
@@ -106,6 +107,10 @@ class HydrationRepository private constructor(private val context: Context) {
             streakDays = streak,
             isLoaded = true
         )
+    }.catch { throwable ->
+        // Corrupt / unreadable DataStore on a real device must not kill the app.
+        android.util.Log.e("HydroBud", "uiStateFlow failed, falling back to defaults", throwable)
+        emit(HydrationUiState(isLoaded = true))
     }
 
     suspend fun getSnapshot(): HydrationUiState = uiStateFlow.first()

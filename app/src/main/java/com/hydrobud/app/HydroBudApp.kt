@@ -14,7 +14,9 @@ class HydroBudApp : Application() {
     override fun onCreate() {
         super.onCreate()
         installCrashLogger()
-        HydrationNotificationHelper.createNotificationChannel(this)
+        CrashGuard.markStarting(this)
+        // A notification channel must never be able to take the app down.
+        runCatching { HydrationNotificationHelper.createNotificationChannel(this) }
     }
 
     private fun installCrashLogger() {
