@@ -17,9 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,9 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.core.content.ContextCompat
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hydrobud.app.ui.MainViewModel
@@ -46,7 +46,6 @@ import com.hydrobud.app.ui.theme.HydroBudTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -62,6 +61,7 @@ fun HydroBudRoot(viewModel: MainViewModel = viewModel()) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sensorStatus by viewModel.sensorStatus.collectAsStateWithLifecycle()
+    val serviceError by viewModel.serviceError.collectAsStateWithLifecycle()
     var showSplash by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -100,11 +100,15 @@ fun HydroBudRoot(viewModel: MainViewModel = viewModel()) {
         }
     }
 
-    val tabs = remember {
+    val waterPainter: Painter = painterResource(R.drawable.ic_round_water_drop)
+    val stepsPainter: Painter = painterResource(R.drawable.ic_round_directions_walk)
+    val settingsVector: ImageVector = Icons.Rounded.Settings
+
+    val tabs = remember(waterPainter, stepsPainter) {
         listOf(
-            NavTabItem("water", "Water", Icons.Rounded.WaterDrop),
-            NavTabItem("steps", "Steps", Icons.Rounded.DirectionsWalk),
-            NavTabItem("settings", "Settings", Icons.Rounded.Settings)
+            NavTabItem("water", "Water", painter = waterPainter),
+            NavTabItem("steps", "Steps", painter = stepsPainter),
+            NavTabItem("settings", "Settings", imageVector = settingsVector)
         )
     }
 
@@ -139,6 +143,7 @@ fun HydroBudRoot(viewModel: MainViewModel = viewModel()) {
                             1 -> WalkScreen(
                                 state = state,
                                 sensorStatus = sensorStatus,
+                                serviceError = serviceError,
                                 onUpdateProfile = { viewModel.updateProfile(it) },
                                 onPermissionGranted = { viewModel.reregisterStepSensor() },
                                 contentPadding = innerPadding

@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -132,12 +133,10 @@ fun PillProgressBar(
 data class NavTabItem(
     val route: String,
     val label: String,
-    val icon: ImageVector
+    val imageVector: ImageVector? = null,
+    val painter: Painter? = null
 )
 
-/**
- * Minimal 3-tab floating pill navigation bar matching the clean pill aesthetic of 262479.jpg.
- */
 @Composable
 fun FloatingPillNavBar(
     tabs: List<NavTabItem>,
@@ -171,7 +170,6 @@ fun FloatingPillNavBar(
                 label = "navPillOffset"
             )
 
-            // Sliding Coral-Orange active pill
             Box(
                 modifier = Modifier
                     .offset(x = indicatorOffset)
@@ -206,12 +204,21 @@ fun FloatingPillNavBar(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label,
-                                tint = contentColor,
-                                modifier = Modifier.size(19.dp)
-                            )
+                            if (tab.painter != null) {
+                                Icon(
+                                    painter = tab.painter,
+                                    contentDescription = tab.label,
+                                    tint = contentColor,
+                                    modifier = Modifier.size(19.dp)
+                                )
+                            } else if (tab.imageVector != null) {
+                                Icon(
+                                    imageVector = tab.imageVector,
+                                    contentDescription = tab.label,
+                                    tint = contentColor,
+                                    modifier = Modifier.size(19.dp)
+                                )
+                            }
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = tab.label,

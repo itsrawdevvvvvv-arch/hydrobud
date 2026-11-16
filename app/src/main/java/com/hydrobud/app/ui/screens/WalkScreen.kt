@@ -26,10 +26,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.DirectionsWalk
-import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -49,11 +45,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.hydrobud.app.R
 import com.hydrobud.app.data.HydrationUiState
 import com.hydrobud.app.data.UserProfile
 import com.hydrobud.app.ui.components.BouncyPillButton
@@ -66,6 +64,7 @@ import java.util.Locale
 fun WalkScreen(
     state: HydrationUiState,
     sensorStatus: String,
+    serviceError: String?,
     onUpdateProfile: (UserProfile) -> Unit,
     onPermissionGranted: () -> Unit,
     contentPadding: PaddingValues
@@ -89,6 +88,7 @@ fun WalkScreen(
     ) { granted ->
         hasActivityPermission = granted
         if (granted) {
+            onUpdateProfile(state.profile.copy(walkTrackingEnabled = true))
             onPermissionGranted()
         }
     }
@@ -132,7 +132,6 @@ fun WalkScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        // Live Sensor Status Pill
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surface
@@ -146,13 +145,13 @@ fun WalkScreen(
                         .size(8.dp)
                         .clip(CircleShape)
                         .background(
-                            if (state.profile.walkTrackingEnabled) HydroColors.FreshGreen
+                            if (state.profile.walkTrackingEnabled && hasActivityPermission) HydroColors.FreshGreen
                             else HydroColors.InkMuted
                         )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (state.profile.walkTrackingEnabled) sensorStatus else "Paused",
+                    text = if (state.profile.walkTrackingEnabled) sensorStatus else "Paused (Enable below)",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -172,7 +171,7 @@ fun WalkScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Allow Physical Activity for accurate hardware step counting.",
+                        text = "Allow Physical Activity to enable step counting.",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = HydroColors.InkBlack,
@@ -191,7 +190,22 @@ fun WalkScreen(
             }
         }
 
-        // Minimal Step Counter Card
+        if (serviceError != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                color = HydroColors.CoralSoft
+            ) {
+                Text(
+                    text = serviceError,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = HydroColors.InkBlack,
+                    modifier = Modifier.padding(14.dp)
+                )
+            }
+        }
+
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
@@ -239,7 +253,12 @@ fun WalkScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Rounded.Route, contentDescription = null, modifier = Modifier.size(16.dp), tint = HydroColors.CyanDeep)
+                            Icon(
+                                painter = painterResource(R.drawable.ic_round_route),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = HydroColors.CyanDeep
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = String.format(Locale.US, "%.2f km", state.estimatedKm),
@@ -259,7 +278,12 @@ fun WalkScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, modifier = Modifier.size(16.dp), tint = HydroColors.CoralOrange)
+                            Icon(
+                                painter = painterResource(R.drawable.ic_round_local_fire_department),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = HydroColors.CoralOrange
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "~${state.estimatedKcal} kcal",
@@ -272,7 +296,6 @@ fun WalkScreen(
             }
         }
 
-        // Daily Walk Goal Setter
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
@@ -347,49 +370,61 @@ fun WalkScreen(
             }
         }
 
-        // Always-On Background Step Counter Toggle
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
                 Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        Icons.Rounded.DirectionsWalk,
-                        contentDescription = null,
-                        tint = HydroColors.CoralOrange
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Always-On Step Counter",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_round_directions_walk),
+                            contentDescription = null,
+                            tint = HydroColors.CoralOrange,
+                            modifier = Modifier.size(22.dp)
                         )
-                        Text(
-                            text = "Counts steps even when app is closed",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Always-On Step Counter",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Counts steps in background",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                }
-                Switch(
-                    checked = state.profile.walkTrackingEnabled,
-                    onCheckedChange = { enabled ->
-                        onUpdateProfile(state.profile.copy(walkTrackingEnabled = enabled))
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = HydroColors.CoralOrange
+                    Switch(
+                        checked = state.profile.walkTrackingEnabled,
+                        onCheckedChange = { enabled ->
+                            if (enabled && !hasActivityPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                activityPermLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                            } else {
+                                onUpdateProfile(state.profile.copy(walkTrackingEnabled = enabled))
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = HydroColors.CoralOrange
+                        )
                     )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Tip for Xiaomi/MIUI: Enable Autostart for HydroBud in App Info so the step counter stays running.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

@@ -26,9 +26,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.Undo
-import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,10 +44,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hydrobud.app.R
 import com.hydrobud.app.data.HydrationUiState
 import com.hydrobud.app.data.WaterLogEntry
 import com.hydrobud.app.ui.components.AnimatedLiquidTankWithCharacter
@@ -91,7 +90,6 @@ fun HomeScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Minimal Bold Headline (262479.jpg style)
         item {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -120,7 +118,6 @@ fun HomeScreen(
             }
         }
 
-        // Rising Dome Character Card (262479.jpg middle screen aesthetic)
         item {
             Surface(
                 modifier = Modifier
@@ -139,7 +136,6 @@ fun HomeScreen(
             }
         }
 
-        // Quick Add Pill Buttons
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
@@ -196,7 +192,11 @@ fun HomeScreen(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface
                     ) {
-                        Icon(Icons.Rounded.Undo, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(
+                            painter = painterResource(R.drawable.ic_round_undo),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Undo", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
@@ -204,7 +204,6 @@ fun HomeScreen(
             }
         }
 
-        // Minimal Sip History List (262479.jpg Screen 1 row style)
         if (state.todayLogs.isNotEmpty()) {
             item {
                 Text(
@@ -266,7 +265,7 @@ private fun WaterLogPillRow(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Rounded.WaterDrop,
+                            painter = painterResource(R.drawable.ic_round_water_drop),
                             contentDescription = null,
                             tint = HydroColors.CyanDeep,
                             modifier = Modifier.size(18.dp)
@@ -290,7 +289,7 @@ private fun WaterLogPillRow(
 
             IconButton(onClick = onDelete) {
                 Icon(
-                    imageVector = Icons.Rounded.DeleteOutline,
+                    painter = painterResource(R.drawable.ic_round_delete_outline),
                     contentDescription = "Remove",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )

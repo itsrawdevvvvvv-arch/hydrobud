@@ -59,7 +59,7 @@ data class UserProfile(
     val activityLevel: ActivityLevel = ActivityLevel.MODERATE,
     val dailyGoalMl: Int = 2500,
     val dailyStepGoal: Int = 8000,
-    val walkTrackingEnabled: Boolean = true,
+    val walkTrackingEnabled: Boolean = false,
     val wakeHour: Int = 7,
     val sleepHour: Int = 23,
     val characterType: HydroCharacterType = HydroCharacterType.DROPPY,

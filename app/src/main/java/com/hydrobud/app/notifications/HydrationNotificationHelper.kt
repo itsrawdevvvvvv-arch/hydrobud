@@ -38,6 +38,17 @@ object HydrationNotificationHelper {
         manager.createNotificationChannel(channel)
     }
 
+    fun hasNotificationPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
     fun showHydrationNotification(
         context: Context,
         userName: String,
@@ -47,13 +58,7 @@ object HydrationNotificationHelper {
         todaySteps: Int = 0,
         stepGoal: Int = 8000
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!granted) return
-        }
+        if (!hasNotificationPermission(context)) return
 
         createNotificationChannel(context)
 
@@ -114,7 +119,7 @@ object HydrationNotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_steps)
             .setLargeIcon(cardBitmap)
             .setContentTitle(title)
             .setContentText(body)
@@ -123,7 +128,7 @@ object HydrationNotificationHelper {
                     .bigPicture(cardBitmap)
                     .setSummaryText(body)
             )
-            .setColor(Color.parseColor("#7C76B8"))
+            .setColor(Color.parseColor("#FF6536"))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(openPendingIntent)
             .setAutoCancel(true)
@@ -131,12 +136,13 @@ object HydrationNotificationHelper {
             .addAction(0, "+500 ml Bottle", add500PendingIntent)
             .build()
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // Permission revoked concurrently; ignore safely
+        }
     }
 
-    /**
-     * Renders a playful neo-brutalist progress card Bitmap using the "Let's stream TV shows now" palette.
-     */
     private fun renderPlayfulBannerBitmap(
         characterName: String,
         waterPct: Int,
@@ -151,87 +157,62 @@ object HydrationNotificationHelper {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
 
-        val periwinkle = Color.parseColor("#7C76B8")
-        val yellow = Color.parseColor("#F5EB3B")
-        val peach = Color.parseColor("#F9C8BE")
-        val amber = Color.parseColor("#F2BF5E")
-        val ink = Color.parseColor("#111111")
+        val offWhite = Color.parseColor("#F5F5F5")
+        val cyan = Color.parseColor("#1ED5E2")
+        val coral = Color.parseColor("#FF6536")
+        val ink = Color.parseColor("#141414")
 
-        // Background card
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = periwinkle }
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = offWhite }
         canvas.drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), 42f, 42f, bgPaint)
 
-        // Crisp black border
         val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = ink
             style = Paint.Style.STROKE
-            strokeWidth = 6f
+            strokeWidth = 5f
         }
-        canvas.drawRoundRect(RectF(6f, 6f, w - 6f, h - 6f), 40f, 40f, strokePaint)
 
-        // Cute mascot droplet on left
-        val dropPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = yellow }
-        val dropPath = Path().apply {
-            moveTo(115f, 42f)
-            cubicTo(175f, 105f, 180f, 225f, 115f, 225f)
-            cubicTo(50f, 225f, 55f, 105f, 115f, 42f)
+        // Cute cyan dome mascot on left
+        val domePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = cyan }
+        val domePath = Path().apply {
+            moveTo(30f, 240f)
+            lineTo(30f, 130f)
+            quadTo(115f, 30f, 200f, 130f)
+            lineTo(200f, 240f)
             close()
         }
-        canvas.drawPath(dropPath, dropPaint)
-        canvas.drawPath(dropPath, strokePaint)
+        canvas.drawPath(domePath, domePaint)
+        canvas.drawPath(domePath, strokePaint)
 
-        // Cute oval eyes
-        val whitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
         val inkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ink }
-        canvas.drawOval(RectF(86f, 128f, 106f, 156f), whitePaint)
-        canvas.drawOval(RectF(86f, 128f, 106f, 156f), strokePaint)
-        canvas.drawOval(RectF(124f, 128f, 144f, 156f), whitePaint)
-        canvas.drawOval(RectF(124f, 128f, 144f, 156f), strokePaint)
-        canvas.drawCircle(98f, 143f, 5f, inkPaint)
-        canvas.drawCircle(136f, 143f, 5f, inkPaint)
+        canvas.drawCircle(90f, 155f, 8f, inkPaint)
+        canvas.drawCircle(140f, 155f, 8f, inkPaint)
 
-        // Title pill
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = yellow
-            textSize = 32f
+            color = ink
+            textSize = 30f
             isFakeBoldText = true
         }
-        canvas.drawText("$characterName's Live Check-In", 215f, 70f, titlePaint)
+        canvas.drawText("$characterName's Live Check-In", 225f, 70f, titlePaint)
 
-        // Water pill bar
-        val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#5D579B") }
-        val waterBarRect = RectF(215f, 95f, 670f, 145f)
+        val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#E0E0E0") }
+        val waterBarRect = RectF(225f, 95f, 675f, 145f)
         canvas.drawRoundRect(waterBarRect, 25f, 25f, trackPaint)
         val waterFillWidth = (waterBarRect.width() * (waterPct / 100f)).coerceAtLeast(36f)
-        val peachPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = peach }
-        canvas.drawRoundRect(
-            RectF(215f, 95f, 215f + waterFillWidth, 145f),
-            25f,
-            25f,
-            peachPaint
-        )
-        canvas.drawRoundRect(waterBarRect, 25f, 25f, strokePaint)
+        canvas.drawRoundRect(RectF(225f, 95f, 225f + waterFillWidth, 145f), 25f, 25f, domePaint)
 
         val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = ink
-            textSize = 23f
+            textSize = 22f
             isFakeBoldText = true
         }
-        canvas.drawText("Water: $todayTotalMl / $goalMl ml ($waterPct%)", 235f, 128f, labelPaint)
+        canvas.drawText("Water: $todayTotalMl / $goalMl ml ($waterPct%)", 245f, 128f, labelPaint)
 
-        // Walk pill bar
-        val walkBarRect = RectF(215f, 170f, 670f, 220f)
+        val walkBarRect = RectF(225f, 170f, 675f, 220f)
         canvas.drawRoundRect(walkBarRect, 25f, 25f, trackPaint)
         val walkFillWidth = (walkBarRect.width() * (stepPct / 100f)).coerceAtLeast(36f)
-        val amberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = amber }
-        canvas.drawRoundRect(
-            RectF(215f, 170f, 215f + walkFillWidth, 220f),
-            25f,
-            25f,
-            amberPaint
-        )
-        canvas.drawRoundRect(walkBarRect, 25f, 25f, strokePaint)
-        canvas.drawText("Walk: $todaySteps / $stepGoal steps ($stepPct%)", 235f, 203f, labelPaint)
+        val coralPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = coral }
+        canvas.drawRoundRect(RectF(225f, 170f, 225f + walkFillWidth, 220f), 25f, 25f, coralPaint)
+        canvas.drawText("Walk: $todaySteps / $stepGoal steps ($stepPct%)", 245f, 203f, labelPaint)
 
         return bmp
     }

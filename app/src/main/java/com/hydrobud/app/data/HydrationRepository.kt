@@ -61,7 +61,7 @@ class HydrationRepository private constructor(private val context: Context) {
             activityLevel = ActivityLevel.fromId(prefs[Keys.ACTIVITY_LEVEL]),
             dailyGoalMl = prefs[Keys.DAILY_GOAL_ML] ?: 2500,
             dailyStepGoal = prefs[Keys.DAILY_STEP_GOAL] ?: 8000,
-            walkTrackingEnabled = prefs[Keys.WALK_TRACKING_ENABLED] ?: true,
+            walkTrackingEnabled = prefs[Keys.WALK_TRACKING_ENABLED] ?: false,
             wakeHour = prefs[Keys.WAKE_HOUR] ?: 7,
             sleepHour = prefs[Keys.SLEEP_HOUR] ?: 23,
             characterType = HydroCharacterType.fromId(prefs[Keys.CHARACTER_TYPE]),
@@ -70,7 +70,7 @@ class HydrationRepository private constructor(private val context: Context) {
             quickCup1Ml = prefs[Keys.QUICK_CUP_1] ?: 150,
             quickCup2Ml = prefs[Keys.QUICK_CUP_2] ?: 250,
             quickCup3Ml = prefs[Keys.QUICK_CUP_3] ?: 500,
-            hasCompletedOnboarding = prefs[Keys.ONBOARDING_DONE] ?: false
+            hasCompletedOnboarding = prefs[Keys.ONBOARDING_DONE] ?: true
         )
 
         val todayLogs = if (storedDate == today) {
@@ -157,7 +157,6 @@ class HydrationRepository private constructor(private val context: Context) {
                     currentTodaySteps
                 }
                 totalStepsSinceBoot < lastSensor -> {
-                    // Device rebooted: hardware counter reset to 0
                     baseline = totalStepsSinceBoot - currentTodaySteps
                     prefs[Keys.SENSOR_BASELINE] = baseline
                     currentTodaySteps + totalStepsSinceBoot

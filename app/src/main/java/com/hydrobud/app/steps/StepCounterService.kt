@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import com.hydrobud.app.MainActivity
 import com.hydrobud.app.R
 import com.hydrobud.app.data.HydrationRepository
+import com.hydrobud.app.notifications.HydrationNotificationHelper
 import com.hydrobud.app.widget.HydroWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,10 +33,10 @@ import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
 /**
- * Reliable always-on step counter foreground service.
- * - Uses Sensor.TYPE_STEP_COUNTER with maxReportLatencyUs = 0 for immediate delivery.
- * - Falls back to Sensor.TYPE_STEP_DETECTOR or a tuned Accelerometer step detector
- *   if permission isn't granted yet or the device lacks a hardware step sensor.
+ * Always-on step counter foreground service with full Android 14+ / MIUI safety guards:
+ * - Never crashes if ACTIVITY_RECOGNITION or POST_NOTIFICATIONS is denied.
+ * - Wraps startForeground() and startForegroundService() in try/catch.
+ * - Uses monochrome ic_stat_steps notification small icon.
  */
 class StepCounterService : Service(), SensorEventListener {
 
@@ -57,23 +58,45 @@ class StepCounterService : Service(), SensorEventListener {
         super.onCreate()
         createChannel()
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        registerBestSensor()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_REREGISTER) {
-            registerBestSensor()
+        if (!hasActivityPermission(this)) {
+            _sensorStatus.value = "Permission needed"
+            _startError.value = "Grant Physical Activity permission to start the step counter."
+            stopSelf()
+            return START_NOT_STICKY
         }
 
         val notification = buildLiveNotification(0, 8000, 0, 2500)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        val started = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            true
+        } catch (e: SecurityException) {
+            _startError.value = "Permission denied for background step tracking."
+            false
+        } catch (e: Exception) {
+            _startError.value = "Background step service blocked by system (on Xiaomi/MIUI, enable Autostart)."
+            false
+        }
+
+        if (!started) {
+            _sensorStatus.value = "Blocked by system"
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        _startError.value = null
+        if (intent?.action == ACTION_REREGISTER || _sensorStatus.value == "Inactive" || _sensorStatus.value == "Starting...") {
+            registerBestSensor()
         }
 
         serviceScope.launch {
@@ -91,16 +114,7 @@ class StepCounterService : Service(), SensorEventListener {
     private fun registerBestSensor() {
         sensorManager.unregisterListener(this)
 
-        val hasActivityPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACTIVITY_RECOGNITION
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-
-        if (hasActivityPermission) {
+        if (hasActivityPermission(this)) {
             val stepCounter = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
             if (stepCounter != null && sensorManager.registerListener(
                     this,
@@ -128,7 +142,6 @@ class StepCounterService : Service(), SensorEventListener {
             }
         }
 
-        // Universal fallback: tuned low-pass/high-pass accelerometer step detector
         val accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         if (accel != null) {
             sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)
@@ -179,7 +192,6 @@ class StepCounterService : Service(), SensorEventListener {
                 val y = event.values[1]
                 val z = event.values[2]
                 val rawMag = sqrt(x * x + y * y + z * z)
-                // Smooth gravity baseline + detect walking peak
                 filteredMag = filteredMag * 0.8f + rawMag * 0.2f
                 val diff = filteredMag - prevMag
                 prevMag = filteredMag
@@ -210,6 +222,7 @@ class StepCounterService : Service(), SensorEventListener {
 
     override fun onDestroy() {
         sensorManager.unregisterListener(this)
+        _sensorStatus.value = "Inactive"
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -230,8 +243,13 @@ class StepCounterService : Service(), SensorEventListener {
     }
 
     private fun updateNotification(steps: Int, stepGoal: Int, waterMl: Int, waterGoal: Int) {
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID, buildLiveNotification(steps, stepGoal, waterMl, waterGoal))
+        if (!HydrationNotificationHelper.hasNotificationPermission(this)) return
+        try {
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.notify(NOTIFICATION_ID, buildLiveNotification(steps, stepGoal, waterMl, waterGoal))
+        } catch (_: SecurityException) {
+            // Keep service alive even if notification permission is missing
+        }
     }
 
     private fun buildLiveNotification(
@@ -262,7 +280,7 @@ class StepCounterService : Service(), SensorEventListener {
 
         val pct = if (stepGoal > 0) ((steps * 100) / stepGoal).coerceIn(0, 100) else 0
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_steps)
             .setContentTitle("Steps: $steps / $stepGoal  •  Water: $waterMl / $waterGoal ml")
             .setContentText("Active: ${_sensorStatus.value}")
             .setProgress(100, pct, false)
@@ -278,24 +296,61 @@ class StepCounterService : Service(), SensorEventListener {
         private const val NOTIFICATION_ID = 2002
         private const val ACTION_REREGISTER = "com.hydrobud.app.ACTION_REREGISTER_SENSOR"
 
-        private val _sensorStatus = MutableStateFlow("Starting...")
+        private val _sensorStatus = MutableStateFlow("Inactive")
         val sensorStatus: StateFlow<String> = _sensorStatus.asStateFlow()
 
-        fun start(context: Context) {
-            val intent = Intent(context, StepCounterService::class.java)
-            context.startForegroundService(intent)
+        private val _startError = MutableStateFlow<String?>(null)
+        val startError: StateFlow<String?> = _startError.asStateFlow()
+
+        fun hasActivityPermission(context: Context): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACTIVITY_RECOGNITION
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
         }
 
-        fun reregister(context: Context) {
-            val intent = Intent(context, StepCounterService::class.java).apply {
-                action = ACTION_REREGISTER
+        fun start(context: Context): Boolean {
+            if (!hasActivityPermission(context)) {
+                _startError.value = "Grant Physical Activity permission to start the step counter."
+                return false
             }
-            context.startForegroundService(intent)
+            return try {
+                val intent = Intent(context, StepCounterService::class.java)
+                context.startForegroundService(intent)
+                _startError.value = null
+                true
+            } catch (e: Exception) {
+                _startError.value = "Could not start step service in background. Enable Autostart for HydroBud on Xiaomi/MIUI."
+                false
+            }
+        }
+
+        fun reregister(context: Context): Boolean {
+            if (!hasActivityPermission(context)) return false
+            return try {
+                val intent = Intent(context, StepCounterService::class.java).apply {
+                    action = ACTION_REREGISTER
+                }
+                context.startForegroundService(intent)
+                _startError.value = null
+                true
+            } catch (e: Exception) {
+                _startError.value = "Could not start step service. Enable Autostart for HydroBud on Xiaomi/MIUI."
+                false
+            }
         }
 
         fun stop(context: Context) {
-            val intent = Intent(context, StepCounterService::class.java)
-            context.stopService(intent)
+            try {
+                val intent = Intent(context, StepCounterService::class.java)
+                context.stopService(intent)
+                _startError.value = null
+            } catch (_: Exception) {
+            }
         }
     }
 }

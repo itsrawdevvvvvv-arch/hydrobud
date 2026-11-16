@@ -1,6 +1,7 @@
 package com.hydrobud.app.ui.screens
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -47,15 +47,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.hydrobud.app.HydroBudApp
+import com.hydrobud.app.R
 import com.hydrobud.app.data.HydroCharacterType
 import com.hydrobud.app.data.UserProfile
 import com.hydrobud.app.ui.components.BouncyPillButton
 import com.hydrobud.app.ui.theme.HydroColors
+import java.io.File
 
 @Composable
 fun SettingsScreen(
@@ -67,6 +71,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     var nameInput by remember(profile.name) { mutableStateOf(profile.name) }
     var goalSlider by remember(profile.dailyGoalMl) { mutableFloatStateOf(profile.dailyGoalMl.toFloat()) }
+
+    val crashFile = remember { File(context.filesDir, HydroBudApp.CRASH_LOG_FILE) }
+    var hasCrashLog by remember { mutableStateOf(crashFile.exists()) }
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -110,7 +117,6 @@ fun SettingsScreen(
             lineHeight = 28.sp
         )
 
-        // Name Pill Row
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -145,7 +151,6 @@ fun SettingsScreen(
             }
         }
 
-        // Daily Water Limit Pill Row
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -180,7 +185,6 @@ fun SettingsScreen(
             }
         }
 
-        // Dome Theme Color Picker (262479.jpg radio row style)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -222,7 +226,6 @@ fun SettingsScreen(
             }
         }
 
-        // Water Reminders Pill Row
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -297,9 +300,66 @@ fun SettingsScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(Icons.Rounded.NotificationsActive, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(
+                painter = painterResource(R.drawable.ic_round_notifications_active),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Send Test Notification", fontWeight = FontWeight.Bold)
+        }
+
+        // Crash Log Diagnostics Row (R6)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Diagnostics", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        text = if (hasCrashLog) "Crash log available" else "No crashes recorded",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (hasCrashLog) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        BouncyPillButton(
+                            onClick = {
+                                val text = runCatching { crashFile.readText() }.getOrDefault("")
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_SUBJECT, "HydroBud Crash Log")
+                                    putExtra(Intent.EXTRA_TEXT, text)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Share Crash Log"))
+                            },
+                            containerColor = HydroColors.CyanDome,
+                            contentColor = HydroColors.InkBlack
+                        ) {
+                            Text("Share Log", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        BouncyPillButton(
+                            onClick = {
+                                crashFile.delete()
+                                hasCrashLog = false
+                            },
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ) {
+                            Text("Clear", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
     }
 }

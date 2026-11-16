@@ -26,6 +26,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     val sensorStatus: StateFlow<String> = StepCounterService.sensorStatus
+    val serviceError: StateFlow<String?> = StepCounterService.startError
 
     init {
         viewModelScope.launch {
@@ -36,7 +37,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 enabled = snapshot.profile.remindersEnabled,
                 intervalMinutes = snapshot.profile.reminderIntervalMinutes
             )
-            if (snapshot.profile.walkTrackingEnabled) {
+            // Only start the health foreground service if BOTH enabled AND permission is already granted (R1)
+            if (snapshot.profile.walkTrackingEnabled &&
+                StepCounterService.hasActivityPermission(getApplication())
+            ) {
                 StepCounterService.start(getApplication())
             }
             HydroWidgetProvider.triggerRefresh(getApplication())
@@ -73,7 +77,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 intervalMinutes = updated.reminderIntervalMinutes
             )
             if (updated.walkTrackingEnabled) {
-                StepCounterService.start(getApplication())
+                if (StepCounterService.hasActivityPermission(getApplication())) {
+                    StepCounterService.start(getApplication())
+                }
             } else {
                 StepCounterService.stop(getApplication())
             }
@@ -82,7 +88,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun reregisterStepSensor() {
-        if (uiState.value.profile.walkTrackingEnabled) {
+        if (uiState.value.profile.walkTrackingEnabled &&
+            StepCounterService.hasActivityPermission(getApplication())
+        ) {
             StepCounterService.reregister(getApplication())
         }
     }
